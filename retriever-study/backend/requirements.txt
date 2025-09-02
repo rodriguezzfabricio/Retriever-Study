@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+sentence-transformers
+boto3
+transformers
+pytest==8.4.1
+python-jose[cryptography]
+python-multipart
+authlib
+httpx
+python-dotenv
+slowapi
+redis
+structlog
+sentry-sdk[fastapi]

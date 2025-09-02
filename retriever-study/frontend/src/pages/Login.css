@@ -1,0 +1,38 @@
+/* Login.css - Zara-inspired styles */
+
+.login-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: calc(100vh - 80px); /* Full viewport height minus header height */
+  width: 100%;
+  background-color: #FFFFFF; /* Pure white background */
+}
+
+.login-box {
+  text-align: center;
+  padding: 40px;
+}
+
+.login-title {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-size: 24px; /* More reserved font size */
+  font-weight: 500; /* A medium weight */
+  color: #000000; /* Black text */
+  margin: 0 0 10px;
+  text-transform: uppercase; /* All caps like Zara's UI */
+  letter-spacing: 1.5px; /* Editorial letter spacing */
+}
+
+.login-subtitle {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 40px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.google-button-wrapper {
+  display: inline-block;
+}

@@ -1,0 +1,24 @@
+/* Layout styles - Zara-inspired structure */
+.layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #ffffff;
+}
+
+.main-content {
+  flex: 1;
+  padding: 40px 0;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+/* Responsive main content */
+@media (max-width: 768px) {
+  .main-content {
+    padding: 20px 15px;
+  }
+}
