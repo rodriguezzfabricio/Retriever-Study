@@ -3,6 +3,16 @@ import json
 import uuid
 from typing import List, Dict, Any, Optional
 
+DEFAULT_MAX_MEMBERS = 8
+MAX_MEMBERS_MIN = 2
+MAX_MEMBERS_MAX = 50
+
+
+class GroupCapacityError(Exception):
+    """Raised when attempting to add a member to a full group."""
+    pass
+
+
 class Database:
     """Manages all database operations for the local SQLite database."""
 
@@ -56,7 +66,10 @@ class Database:
             location TEXT,
             ownerId TEXT NOT NULL,
             members TEXT,
-            embedding TEXT
+            embedding TEXT,
+            maxMembers INTEGER DEFAULT 8,
+            semester TEXT,
+            expires_at TEXT
         );
         """)
 
@@ -70,6 +83,17 @@ class Database:
             toxicityScore REAL
         );
         """)
+
+        cursor.execute("PRAGMA table_info(groups)")
+        existing_group_cols = {row[1] for row in cursor.fetchall()}
+        if "maxMembers" not in existing_group_cols:
+            cursor.execute(
+                f"ALTER TABLE groups ADD COLUMN maxMembers INTEGER DEFAULT {DEFAULT_MAX_MEMBERS}"
+            )
+        if "semester" not in existing_group_cols:
+            cursor.execute("ALTER TABLE groups ADD COLUMN semester TEXT")
+        if "expires_at" not in existing_group_cols:
+            cursor.execute("ALTER TABLE groups ADD COLUMN expires_at TEXT")
 
         conn.commit()
         conn.close()
@@ -259,10 +283,43 @@ class Database:
         user["embedding"] = json.loads(user["embedding"]) if user["embedding"] else None
         return user
 
+    def _normalize_max_members(self, raw_value: Any) -> int:
+        try:
+            value = int(raw_value)
+        except (TypeError, ValueError):
+            value = DEFAULT_MAX_MEMBERS
+        value = max(MAX_MEMBERS_MIN, min(MAX_MEMBERS_MAX, value))
+        return value
+
+    def _format_group_row(self, row) -> Optional[Dict[str, Any]]:
+        if not row:
+            return None
+
+        group = dict(row)
+        group["tags"] = json.loads(group["tags"]) if group.get("tags") else []
+        group["timePrefs"] = json.loads(group["timePrefs"]) if group.get("timePrefs") else []
+        group["members"] = json.loads(group["members"]) if group.get("members") else []
+        group["embedding"] = json.loads(group["embedding"]) if group.get("embedding") else None
+        group["maxMembers"] = self._normalize_max_members(group.get("maxMembers"))
+        group["semester"] = group.get("semester")
+        group["expires_at"] = group.get("expires_at")
+        return group
+
     # --- Group Methods ---
 
-    def create_group(self, course_code: str, title: str, description: str, tags: List[str], 
-                    time_prefs: List[str], location: str, owner_id: str) -> Dict[str, Any]:
+    def create_group(
+        self,
+        course_code: str,
+        title: str,
+        description: str,
+        tags: List[str],
+        time_prefs: List[str],
+        location: str,
+        owner_id: str,
+        max_members: int = DEFAULT_MAX_MEMBERS,
+        semester: Optional[str] = None,
+        expires_at: Optional[str] = None
+    ) -> Dict[str, Any]:
         """Creates a new group and stores it in the database."""
         conn = self._get_connection()
         cursor = conn.cursor()
@@ -271,11 +328,29 @@ class Database:
         tags_json = json.dumps(tags)
         time_prefs_json = json.dumps(time_prefs)
         members_json = json.dumps([owner_id])  # Owner is first member
+        normalized_max_members = self._normalize_max_members(max_members)
         
         cursor.execute("""
-            INSERT INTO groups (groupId, courseCode, title, description, tags, timePrefs, location, ownerId, members)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (group_id, course_code, title, description, tags_json, time_prefs_json, location, owner_id, members_json))
+            INSERT INTO groups (
+                groupId, courseCode, title, description, tags, timePrefs, location, ownerId,
+                members, embedding, maxMembers, semester, expires_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            group_id,
+            course_code,
+            title,
+            description,
+            tags_json,
+            time_prefs_json,
+            location,
+            owner_id,
+            members_json,
+            None,
+            normalized_max_members,
+            semester,
+            expires_at
+        ))
         conn.commit()
         conn.close()
         
@@ -289,15 +364,7 @@ class Database:
         row = cursor.fetchone()
         conn.close()
         
-        if not row:
-            return None
-        
-        group = dict(row)
-        group["tags"] = json.loads(group["tags"]) if group["tags"] else []
-        group["timePrefs"] = json.loads(group["timePrefs"]) if group["timePrefs"] else []
-        group["members"] = json.loads(group["members"]) if group["members"] else []
-        group["embedding"] = json.loads(group["embedding"]) if group["embedding"] else None
-        return group
+        return self._format_group_row(row)
 
     def get_groups_by_course(self, course_code: str) -> List[Dict[str, Any]]:
         """Retrieves all groups for a specific course."""
@@ -309,12 +376,9 @@ class Database:
         
         groups = []
         for row in rows:
-            group = dict(row)
-            group["tags"] = json.loads(group["tags"]) if group["tags"] else []
-            group["timePrefs"] = json.loads(group["timePrefs"]) if group["timePrefs"] else []
-            group["members"] = json.loads(group["members"]) if group["members"] else []
-            group["embedding"] = json.loads(group["embedding"]) if group["embedding"] else None
-            groups.append(group)
+            formatted = self._format_group_row(row)
+            if formatted:
+                groups.append(formatted)
         return groups
 
     def join_group(self, group_id: str, user_id: str) -> Optional[Dict[str, Any]]:
@@ -326,7 +390,11 @@ class Database:
         # Check if user is already a member (avoid duplicates)
         if user_id in group["members"]:
             return group
-        
+
+        max_members = group.get("maxMembers", DEFAULT_MAX_MEMBERS)
+        if len(group["members"]) >= max_members:
+            raise GroupCapacityError("Study group is at full capacity")
+
         # Add user to members
         group["members"].append(user_id)
         
@@ -358,13 +426,25 @@ class Database:
         
         groups = []
         for row in rows:
-            group = dict(row)
-            group["tags"] = json.loads(group["tags"]) if group["tags"] else []
-            group["timePrefs"] = json.loads(group["timePrefs"]) if group["timePrefs"] else []
-            group["members"] = json.loads(group["members"]) if group["members"] else []
-            group["embedding"] = json.loads(group["embedding"]) if group["embedding"] else None
-            groups.append(group)
+            formatted = self._format_group_row(row)
+            if formatted:
+                groups.append(formatted)
         return groups
+
+    def get_groups_for_user(self, user_id: str) -> List[Dict[str, Any]]:
+        """Retrieve groups where the given user is a member."""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM groups")
+        rows = cursor.fetchall()
+        conn.close()
+
+        user_groups = []
+        for row in rows:
+            formatted = self._format_group_row(row)
+            if formatted and user_id in formatted.get("members", []):
+                user_groups.append(formatted)
+        return user_groups
 
     # --- Message Methods ---
 
