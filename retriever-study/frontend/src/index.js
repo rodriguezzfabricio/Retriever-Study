@@ -6,19 +6,74 @@ import { AuthProvider } from './context/AuthContext';
 import './index.css';
 import App from './App';
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
+// --- SENIOR ENGINEER DEBUGGING ---
+console.log('Checking for Google Client ID:', process.env.REACT_APP_GOOGLE_CLIENT_ID);
+// --- END DEBUGGING ---
 
-// By wrapping the App in these providers, we make their context available
-// to every component in the application.
-root.render(
-  <React.StrictMode>
-    {/* The GoogleOAuthProvider requires your client ID from Google Cloud Console */}
-    <GoogleOAuthProvider clientId="YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com">
-      <BrowserRouter>
-        <AuthProvider>
-          <App />
-        </AuthProvider>
-      </BrowserRouter>
-    </GoogleOAuthProvider>
-  </React.StrictMode>
+const rootElement = document.getElementById('root');
+const root = ReactDOM.createRoot(rootElement);
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+
+const errorContainerStyle = {
+  minHeight: '100vh',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontFamily: 'Inter, system-ui, sans-serif',
+  gap: '0.75rem',
+  padding: '0 1.5rem',
+  textAlign: 'center',
+};
+
+const ConfigError = ({ message }) => (
+  <div style={errorContainerStyle}>
+    <h1>Retriever Study</h1>
+    <p>{message}</p>
+  </div>
 );
+
+async function resolveGoogleClientId() {
+  if (process.env.REACT_APP_GOOGLE_CLIENT_ID) {
+    return process.env.REACT_APP_GOOGLE_CLIENT_ID;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/google/config`);
+    if (!response.ok) {
+      throw new Error(`API responded with status ${response.status}`);
+    }
+    const data = await response.json();
+    return data.client_id || data.clientId || null;
+  } catch (error) {
+    console.error('Failed to load Google OAuth client id from backend', error);
+    return null;
+  }
+}
+
+async function bootstrap() {
+  const clientId = await resolveGoogleClientId();
+
+  if (!clientId) {
+    root.render(
+      <React.StrictMode>
+        <ConfigError message="Google Sign-In is temporarily unavailable. Please contact support." />
+      </React.StrictMode>
+    );
+    return;
+  }
+
+  root.render(
+    <React.StrictMode>
+      <GoogleOAuthProvider clientId={clientId}>
+        <BrowserRouter>
+          <AuthProvider>
+            <App />
+          </AuthProvider>
+        </BrowserRouter>
+      </GoogleOAuthProvider>
+    </React.StrictMode>
+  );
+}
+
+bootstrap();

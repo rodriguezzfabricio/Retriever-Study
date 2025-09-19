@@ -7,6 +7,7 @@ const Navigation = () => {
 
   const navItems = [
     { path: '/groups', label: 'ALL GROUPS' },
+    { path: '/my-groups', label: 'YOUR GROUPS' },
     { path: '/recommendations', label: 'RECOMMENDED' },
     { path: '/search', label: 'SEARCH' },
     { path: '/profile', label: 'PROFILE' },

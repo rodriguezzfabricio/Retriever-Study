@@ -62,16 +62,32 @@ async function apiRequest(endpoint, options = {}) {
 // Health Check
 export const healthCheck = () => apiRequest('/health');
 
-// User Management
-export const createUser = (userData) => 
-  apiRequest('/users', {
+// Authentication
+export const googleLogin = (idToken) =>
+  apiRequest('/auth/google_login', {
     method: 'POST',
+    body: JSON.stringify({ id_token: idToken }),
+  });
+
+// Auth utilities
+export const refreshAccessToken = (refreshToken) =>
+  apiRequest('/auth/refresh', {
+    method: 'POST',
+    body: JSON.stringify({ refresh_token: refreshToken }),
+  });
+
+export const getMe = () => apiRequest('/auth/me');
+
+// User Management
+export const createUser = (userData) =>
+  apiRequest('/users/me', {
+    method: 'PUT',
     body: JSON.stringify(userData),
   });
 
-export const updateUser = (userId, updates) =>
-  apiRequest(`/users/${userId}`, {
-    method: 'PATCH',
+export const updateUser = (updates) =>
+  apiRequest('/users/me', {
+    method: 'PUT',
     body: JSON.stringify(updates),
   });
 
@@ -87,6 +103,9 @@ export const createGroup = (groupData, ownerId) =>
     method: 'POST',
     body: JSON.stringify(groupData),
   });
+
+export const getAllGroups = (offset = 0, limit = 50) =>
+  apiRequest(`/groups?offset=${offset}&limit=${limit}`);
 
 export const getGroupsByCourse = (courseCode) =>
   apiRequest(`/groups?courseCode=${encodeURIComponent(courseCode)}`);

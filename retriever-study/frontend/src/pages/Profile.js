@@ -3,10 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { updateUser, getJoinedGroups } from '../services/api';
 import './Profile.css';
+import usePageTitle from '../hooks/usePageTitle';
 
 const Profile = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const internalId = user?.userId || user?.id || null; // DB id
+  const memberId = user?.sub || user?.googleSub || null; // Google id used in group membership
   
   const [profile, setProfile] = useState(null);
   const [editMode, setEditMode] = useState(false);
@@ -15,8 +18,10 @@ const Profile = () => {
   const [joinedGroups, setJoinedGroups] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  usePageTitle('My Profile');
+
   useEffect(() => {
-    if (user && user.sub) {
+    if (internalId || memberId) {
       setLoading(true);
       // TODO: This should eventually be a single API call to get a user's full profile
       const fullUserProfile = {
@@ -30,9 +35,16 @@ const Profile = () => {
       setProfile(fullUserProfile);
 
       // Fetch joined groups from the backend
-      getJoinedGroups(user.sub)
+      // Use membership id that backend expects (Google sub)
+      getJoinedGroups(memberId || internalId)
         .then(groups => {
-          setJoinedGroups(groups || []);
+          const normalized = (groups || []).map(g => ({
+            id: g.groupId || g.id,
+            name: g.title || g.name,
+            subject: g.courseCode || g.subject,
+            memberCount: Array.isArray(g.members) ? g.members.length : (g.memberCount || 0),
+          }));
+          setJoinedGroups(normalized);
         })
         .catch(err => {
           console.error("Failed to fetch joined groups", err);
@@ -61,7 +73,7 @@ const Profile = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const updatedProfileData = await updateUser(user.sub, { bio: editData.bio });
+      const updatedProfileData = await updateUser({ bio: editData.bio });
       setProfile(prev => ({ ...prev, ...updatedProfileData }));
       setEditMode(false);
       setEditData({});
@@ -137,6 +149,10 @@ const Profile = () => {
           <h2 className="section-title">MY GROUPS ({joinedGroups.length})</h2>
           {joinedGroups.length === 0 ? (
             <div className="empty-groups">
+              <svg width="120" height="80" viewBox="0 0 120 80" aria-hidden="true" style={{marginBottom: 14}}>
+                <rect x="15" y="22" width="90" height="36" rx="8" fill="#f5f5f5" />
+                <rect x="30" y="34" width="60" height="12" rx="6" fill="#e6e6e6" />
+              </svg>
               <p>You haven't joined any groups yet.</p>
               <button 
                 className="browse-groups-btn"
@@ -151,7 +167,6 @@ const Profile = () => {
                 <div 
                   key={group.id}
                   className="group-item"
-                  onClick={() => navigate(`/group/${group.id}`)}
                 >
                   <div className="group-info">
                     <h3 className="group-name">{group.name}</h3>
@@ -160,7 +175,9 @@ const Profile = () => {
                       <span className="group-members">{group.memberCount || 0} members</span>
                     </div>
                   </div>
-                  <div className="group-arrow">→</div>
+                  <div className="group-actions-inline">
+                    <button className="go-chat-btn" onClick={() => navigate(`/group/${group.id}`)}>GO TO CHAT</button>
+                  </div>
                 </div>
               ))}
             </div>

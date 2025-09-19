@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <style>
+      .bg { fill: #000; }
+      .fg { fill: #fff; font: 700 28px Inter, Arial, sans-serif; }
+    </style>
+  </defs>
+  <rect class="bg" rx="12" width="64" height="64" />
+  <text class="fg" x="50%" y="50%" dominant-baseline="central" text-anchor="middle">RS</text>
+  <title>Retriever Study</title>
+</svg>
+

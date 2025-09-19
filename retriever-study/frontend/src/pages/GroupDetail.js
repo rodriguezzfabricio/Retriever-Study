@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { getGroupDetails, getMessages, summarizeChat, joinGroup } from '../services/api';
 import { connectSocket, disconnectSocket, joinRoom, leaveRoom, sendChatMessage, onNewMessage } from '../services/socket';
 import './GroupDetail.css';
+import usePageTitle from '../hooks/usePageTitle';
 
 const GroupDetail = () => {
   const { groupId } = useParams();
@@ -21,6 +22,9 @@ const GroupDetail = () => {
   const [showSummary, setShowSummary] = useState(false);
 
   const isMember = group && user ? group.members.includes(user.sub) : false;
+
+  // Title should reflect the group name when known
+  usePageTitle(group?.name ? `Group: ${group.name}` : 'Group');
 
   // Effect for fetching initial data
   useEffect(() => {

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Header.css';
@@ -6,10 +6,19 @@ import './Header.css';
 const Header = ({ onSearch }) => {
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
+  const [term, setTerm] = useState('');
 
   const handleLogout = () => {
     logout();
     navigate('/login'); // Redirect to login page after logout
+  };
+
+  const submitSearch = (e) => {
+    e && e.preventDefault();
+    const q = term.trim();
+    if (!q) return;
+    if (onSearch) onSearch(q);
+    navigate('/search');
   };
 
   return (
@@ -22,7 +31,19 @@ const Header = ({ onSearch }) => {
 
         {/* Search Bar - Center like Zara */}
         <div className="header-search">
-          {/* Search functionality can be enhanced later */}
+          <form onSubmit={submitSearch} role="search" aria-label="Search groups">
+            <input
+              className="search-input"
+              type="search"
+              placeholder="Search groups (course, topic, etc.)"
+              value={term}
+              onChange={(e) => setTerm(e.target.value)}
+              aria-label="Search groups"
+            />
+            <button type="submit" className="search-button" aria-label="Search">
+              🔍
+            </button>
+          </form>
         </div>
 
         {/* Utility Links - Right side like Zara */}

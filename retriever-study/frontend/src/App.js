@@ -24,6 +24,14 @@ function App() {
           path="/groups" 
           element={<GroupsList searchQuery={searchQuery} />} 
         />
+        <Route
+          path="/my-groups"
+          element={
+            <ProtectedRoute>
+              <GroupsList showMyGroups={true} />
+            </ProtectedRoute>
+          }
+        />
         <Route 
           path="/search" 
           element={<GroupsList showSearch={true} searchQuery={searchQuery} />} 

@@ -13,6 +13,10 @@ const GroupCard = ({ group, onJoin, isJoined = false }) => {
     e.stopPropagation();
     onJoin(group.id);
   };
+  const handleOpenClick = (e) => {
+    e.stopPropagation();
+    navigate(`/group/${group.id}`);
+  };
 
   return (
     <div className="group-card" onClick={handleCardClick}>
@@ -33,7 +37,7 @@ const GroupCard = ({ group, onJoin, isJoined = false }) => {
             JOIN
           </button>
         ) : (
-          <span className="joined-status">JOINED</span>
+          <button className="join-btn" onClick={handleOpenClick}>OPEN</button>
         )}
       </div>
     </div>

@@ -1,20 +1,28 @@
-"""
-Production-grade Google OAuth 2.0 + JWT Authentication System
-
-Key Design Decisions:
-1. JWT tokens for stateless authentication (scales well with Lambda)
-2. Google OAuth for secure, passwordless authentication  
-3. Domain restriction to @umbc.edu for university access control
-4. Separate access/refresh tokens for security + UX
-5. Custom error handling for security and debugging
-"""
+"""Production-grade Google OAuth 2.0 + JWT Authentication System."""
+import asyncio
 import os
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Optional, Dict, Any
+
+from dotenv import load_dotenv
 from fastapi import HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
-import httpx
+from google.oauth2 import id_token as google_id_token
+from google.auth.transport import requests as google_requests
+
+
+def _load_environment() -> None:
+    """Ensure development env files populate os.environ before first access."""
+    project_root = Path(__file__).resolve().parents[2]
+    for filename in (".env", ".env.development", ".env.local"):
+        env_path = project_root / filename
+        if env_path.exists():
+            load_dotenv(env_path, override=False)
+
+
+_load_environment()
 
 # ========== CONFIGURATION ==========
 # These MUST be environment variables in production for security
@@ -123,55 +131,66 @@ def verify_token(token: str) -> Dict[str, Any]:
         raise AuthError("Invalid or expired token")
 
 # ========== GOOGLE OAUTH FUNCTIONS ==========
-async def exchange_code_for_tokens(code: str) -> Dict[str, Any]:
-    """
-    Exchange OAuth authorization code for access tokens
-    
-    OAuth 2.0 Authorization Code Flow Step:
-    Client → Google: "User authorized, here's the code"
-    Google → Client: "Here's the access token for that user"
-    
-    Why this is secure:
-    - Code is single-use and expires quickly
-    - Client secret proves we're the legitimate app
-    - Exchange happens server-to-server (code never exposed to browser)
-    """
-    async with httpx.AsyncClient() as client:
-        # Prepare token exchange request
-        token_data = {
-            "client_id": GOOGLE_CLIENT_ID,
-            "client_secret": GOOGLE_CLIENT_SECRET,  # Proves we're the real app
-            "code": code,                           # Authorization code from callback
-            "grant_type": "authorization_code",     # OAuth 2.0 flow type
-            "redirect_uri": GOOGLE_REDIRECT_URI,    # Must match what we registered
-        }
-        
-        response = await client.post(GOOGLE_TOKEN_URL, data=token_data)
-        
-        if response.status_code != 200:
-            print(f"Google token exchange failed: {response.text}")
-            raise AuthError("Failed to authenticate with Google", 400)
-        
-        return response.json()
 
-async def get_google_user_info(access_token: str) -> Dict[str, Any]:
+def _verify_google_token_sync(id_token: str, client_id: str) -> Dict[str, Any]:
     """
-    Get user profile information from Google
-    
-    Why we need this:
-    - OAuth gives us permission to access user data
-    - We use this to get email, name, profile picture
-    - Email validation happens here (must be @umbc.edu)
+    Synchronous Google token verification - runs in thread pool.
+
+    CRITICAL: This must run in a thread pool to avoid blocking the async event loop.
+    The Google auth library uses synchronous HTTP requests.
     """
-    async with httpx.AsyncClient() as client:
-        headers = {"Authorization": f"Bearer {access_token}"}
-        response = await client.get(GOOGLE_USERINFO_URL, headers=headers)
-        
-        if response.status_code != 200:
-            print(f"Google userinfo failed: {response.status_code}")
-            raise AuthError("Failed to fetch user information")
-        
-        return response.json()
+    request_adapter = google_requests.Request()
+    return google_id_token.verify_oauth2_token(
+        id_token,
+        request_adapter,
+        client_id,
+        clock_skew_in_seconds=120,
+    )
+
+async def verify_google_id_token(id_token: str) -> Dict[str, Any]:
+    """
+    Verify Google-issued ID tokens using google-auth (Production-Grade Async).
+
+    CRITICAL FIX: Google's auth library is synchronous, so we run it in a thread pool
+    to prevent blocking FastAPI's async event loop. This is essential for production.
+
+    Security steps:
+    1. Fetch Google's public keys and verify the JWT signature.
+    2. Validate the token audience matches our client id.
+    3. Enforce allowed issuers from Google.
+    4. Allow minor clock skew for local development machines.
+    """
+    if not id_token:
+        raise AuthError("No ID token provided", 400)
+
+    if not GOOGLE_CLIENT_ID:
+        raise AuthError("Google OAuth is not configured", 500)
+
+    try:
+        # Run synchronous Google API call in thread pool (production-grade async pattern)
+        user_info = await asyncio.get_event_loop().run_in_executor(
+            None,  # Use default thread pool
+            _verify_google_token_sync,
+            id_token,
+            GOOGLE_CLIENT_ID
+        )
+
+        issuer = user_info.get("iss")
+        if issuer not in {"accounts.google.com", "https://accounts.google.com"}:
+            raise AuthError("Invalid token issuer.", 401)
+
+        return user_info
+    except AuthError:
+        raise
+    except OSError as e:
+        print(f"Google ID token network error: {e!r}")
+        raise AuthError("Unable to reach Google token service. Please try again.", 503)
+    except Exception as e:
+        # Log the detailed error for debugging
+        print(f"Google ID token verification failed: {e}")
+        # Return a generic error to the client for security
+        raise AuthError("Invalid or expired Google token", 401)
+
 
 def validate_umbc_email(email: str) -> bool:
     """
@@ -227,112 +246,3 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
             detail="Authentication required",
             headers={"WWW-Authenticate": "Bearer"},  # Tells client how to authenticate
         )
-
-# ========== OAUTH FLOW HANDLER ==========
-class GoogleOAuthFlow:
-    """
-    Handles complete Google OAuth 2.0 flow
-    
-    OAuth Flow Steps:
-    1. get_authorization_url() → Redirect user to Google
-    2. User authorizes our app on Google  
-    3. Google redirects back with code
-    4. handle_callback() → Exchange code for user info + our JWT tokens
-    """
-    
-    def __init__(self):
-        # Fail fast if OAuth not configured
-        if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
-            raise ValueError(
-                "Google OAuth not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables"
-            )
-    
-    def get_authorization_url(self, state: str = None) -> str:
-        """
-        Generate Google OAuth authorization URL
-        
-        Parameters explanation:
-        - scope: What permissions we're requesting (email, profile, openid)
-        - response_type=code: We want authorization code (not implicit flow)
-        - access_type=offline: We want refresh tokens
-        - prompt=consent: Force consent screen (ensures we get refresh token)
-        - state: CSRF protection parameter (optional but recommended)
-        """
-        base_url = "https://accounts.google.com/o/oauth2/auth"
-        
-        params = {
-            "client_id": GOOGLE_CLIENT_ID,
-            "redirect_uri": GOOGLE_REDIRECT_URI,
-            "scope": "openid email profile",  # Standard OpenID Connect scopes
-            "response_type": "code",           # Authorization code flow
-            "access_type": "offline",          # Get refresh tokens
-            "prompt": "consent"                # Force consent screen
-        }
-        
-        if state:
-            params["state"] = state  # CSRF protection
-        
-        # Build query string manually (more control than urllib)
-        query_params = "&".join([f"{key}={value}" for key, value in params.items()])
-        return f"{base_url}?{query_params}"
-    
-    async def handle_callback(self, code: str, state: str = None) -> Dict[str, Any]:
-        """
-        Handle OAuth callback and return JWT tokens + user info
-        
-        This is the core of our auth system:
-        1. Exchange code for Google access token
-        2. Use Google token to get user info
-        3. Validate user email domain
-        4. Create our own JWT tokens
-        5. Return everything frontend needs
-        """
-        try:
-            # Step 1: Exchange authorization code for Google tokens
-            google_tokens = await exchange_code_for_tokens(code)
-            google_access_token = google_tokens.get("access_token")
-            
-            if not google_access_token:
-                raise AuthError("No access token received from Google")
-            
-            # Step 2: Get user information from Google
-            user_info = await get_google_user_info(google_access_token)
-            
-            # Step 3: Validate university email requirement
-            email = user_info.get("email", "").strip()
-            if not validate_umbc_email(email):
-                raise AuthError("Only @umbc.edu email addresses are permitted", 403)
-            
-            # Step 4: Create our application's JWT tokens
-            user_payload = {
-                "sub": user_info.get("id"),        # Google user ID
-                "email": email,
-                "name": user_info.get("name", ""),
-                "picture": user_info.get("picture", "")
-            }
-            
-            access_token = create_access_token(user_payload)
-            refresh_token = create_refresh_token(user_payload)
-            
-            # Step 5: Return complete authentication response
-            return {
-                "access_token": access_token,
-                "refresh_token": refresh_token,
-                "token_type": "bearer",
-                "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60,  # Seconds
-                "user": {
-                    "id": user_info.get("id"),
-                    "email": email,
-                    "name": user_info.get("name", ""),
-                    "picture": user_info.get("picture", "")
-                }
-            }
-            
-        except AuthError:
-            raise  # Re-raise auth errors as-is
-        except Exception as e:
-            print(f"OAuth callback error: {e}")
-            raise AuthError("Authentication failed", 500)
-
-# Initialize the OAuth handler
-oauth_flow = GoogleOAuthFlow()

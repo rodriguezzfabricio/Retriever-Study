@@ -55,6 +55,31 @@ class Database:
         );
         """)
 
+        cursor.execute("PRAGMA table_info(users)")
+        existing_user_cols = {row[1] for row in cursor.fetchall()}
+        if "google_id" not in existing_user_cols:
+            cursor.execute("ALTER TABLE users ADD COLUMN google_id TEXT")
+            cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id)")
+        if "picture_url" not in existing_user_cols:
+            cursor.execute("ALTER TABLE users ADD COLUMN picture_url TEXT")
+        if "courses" not in existing_user_cols:
+            cursor.execute("ALTER TABLE users ADD COLUMN courses TEXT")
+        if "bio" not in existing_user_cols:
+            cursor.execute("ALTER TABLE users ADD COLUMN bio TEXT")
+        if "prefs" not in existing_user_cols:
+            cursor.execute("ALTER TABLE users ADD COLUMN prefs TEXT")
+        if "embedding" not in existing_user_cols:
+            cursor.execute("ALTER TABLE users ADD COLUMN embedding TEXT")
+        if "created_at" not in existing_user_cols:
+            cursor.execute("ALTER TABLE users ADD COLUMN created_at DATETIME")
+            cursor.execute("UPDATE users SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL")
+        if "last_login" not in existing_user_cols:
+            cursor.execute("ALTER TABLE users ADD COLUMN last_login DATETIME")
+            cursor.execute("UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE last_login IS NULL")
+        if "is_active" not in existing_user_cols:
+            cursor.execute("ALTER TABLE users ADD COLUMN is_active BOOLEAN")
+            cursor.execute("UPDATE users SET is_active = 1 WHERE is_active IS NULL")
+
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS groups (
             groupId TEXT PRIMARY KEY,

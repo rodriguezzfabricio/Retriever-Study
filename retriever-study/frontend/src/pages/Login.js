@@ -2,36 +2,45 @@ import React from 'react';
 import { GoogleLogin } from '@react-oauth/google';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { jwtDecode } from 'jwt-decode'; // Corrected import
+import { googleLogin, ApiError } from '../services/api';
 
 import './Login.css';
+import usePageTitle from '../hooks/usePageTitle';
 
 const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
+  usePageTitle('Login');
 
-  const handleLoginSuccess = (credentialResponse) => {
-    console.log('Google Login Success:', credentialResponse);
+  const handleLoginSuccess = async (credentialResponse) => {
+    try {
+      const idToken = credentialResponse?.credential;
+      if (!idToken) {
+        throw new Error('No credential returned from Google.');
+      }
 
-    // The credentialResponse object contains a JWT token called "credential".
-    // We need to decode it to get the user's profile information (name, email, picture).
-    const userProfile = jwtDecode(credentialResponse.credential); // Corrected usage
-    console.log('Decoded JWT:', userProfile);
+      const authResponse = await googleLogin(idToken);
 
-    // Here, we call the login function from our AuthContext.
-    // We pass it the user's profile and the token itself.
-    // In a real production app, we would first send this token to our own backend
-    // to verify it. The backend would then return OUR OWN JWT token, which we would store.
-    // For now, we'll simulate a successful login directly on the frontend.
-    login(userProfile, credentialResponse.credential);
+      // Persist refresh token for future silent refresh flows (temporary storage until backend issues httpOnly cookies)
+      localStorage.setItem('refreshToken', authResponse.refresh_token);
 
-    // After successfully logging in, we redirect the user to the main groups page.
-    navigate('/groups');
+      // Use our application's access token and user profile
+      login(authResponse.user, authResponse.access_token);
+      navigate('/groups');
+    } catch (error) {
+      if (error instanceof ApiError) {
+        console.error('Google login rejected by backend:', error);
+        alert(error.data?.detail || 'Unable to sign in with your UMBC account.');
+      } else {
+        console.error('Google login failed:', error);
+        alert('Sign-in failed. Please try again.');
+      }
+    }
   };
 
-  const handleLoginError = () => {
-    console.error('Google Login Failed');
-    // TODO: Show an error message to the user (e.g., a toast notification)
+  const handleLoginError = (error) => {
+    console.error('Google Login Failed', error);
+    alert('We could not reach Google Sign-In. Please retry.');
   };
 
   return (

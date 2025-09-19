@@ -1,3 +1,11 @@
+# Load environment variables FIRST - Critical for security config
+from dotenv import load_dotenv
+import os
+
+# Load environment file based on environment
+env_file = ".env.development" if os.getenv("ENVIRONMENT", "development") == "development" else ".env"
+load_dotenv(env_file)
+
 from fastapi import FastAPI, HTTPException, Depends, Request, WebSocket, WebSocketDisconnect
 import json
 from fastapi.middleware.cors import CORSMiddleware
@@ -6,75 +14,43 @@ from typing import List, Dict, Any, Optional
 import sqlite3
 from datetime import datetime
 import os
-from dotenv import load_dotenv
-
-
 
 # Import our own modules
 from app.data.local_db import db, GroupCapacityError  # Keep for compatibility
 from app.data.async_db import initialize_async_database, close_async_database, user_repo, group_repo, async_db
 from app.core.embeddings import embed_text, cosine_similarity, summarize_text
 from app.core.toxicity import get_toxicity_score
-from app.core.auth import oauth_flow, get_current_user, AuthError, verify_token, create_access_token
+from app.core.auth import (
+    verify_google_id_token,
+    get_current_user,
+    AuthError,
+    verify_token,
+    create_access_token,
+    create_refresh_token,
+    validate_umbc_email,
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+    GOOGLE_CLIENT_ID,
+)
 from app.core.async_ai import initialize_ai_service, cleanup_ai_service, ai_service
 from app.core.monitoring import (
-    performance_tracker, 
-    pool_monitor, 
+    performance_tracker,
+    pool_monitor,
     health_checker,
     get_performance_middleware,
-    get_ai_operation_monitor
+    get_ai_operation_monitor,
 )
 from app.core.logging_config import (
     setup_production_logging,
     get_logger,
     error_tracker,
     security_logger,
-    get_error_middleware
+    get_error_middleware,
 )
 from app.core.environment import (
     get_config,
     is_development,
     is_production,
-    Environment
-)
-from fastapi import FastAPI, HTTPException, Depends, Request, WebSocket, WebSocketDisconnect
-import json
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field, validator
-from typing import List, Dict, Any, Optional
-import sqlite3
-from datetime import datetime
-import os
-from dotenv import load_dotenv
-
-
-
-# Import our own modules
-from app.data.local_db import db, GroupCapacityError  # Keep for compatibility
-from app.data.async_db import initialize_async_database, close_async_database, user_repo, group_repo, async_db
-from app.core.embeddings import embed_text, cosine_similarity, summarize_text
-from app.core.toxicity import get_toxicity_score
-from app.core.auth import oauth_flow, get_current_user, AuthError, verify_token, create_access_token
-from app.core.async_ai import initialize_ai_service, cleanup_ai_service, ai_service
-from app.core.monitoring import (
-    performance_tracker, 
-    pool_monitor, 
-    health_checker,
-    get_performance_middleware,
-    get_ai_operation_monitor
-)
-from app.core.logging_config import (
-    setup_production_logging,
-    get_logger,
-    error_tracker,
-    security_logger,
-    get_error_middleware
-)
-from app.core.environment import (
-    get_config,
-    is_development,
-    is_production,
-    Environment
+    Environment,
 )
 from app.core.security import (
     limiter, 
@@ -261,26 +237,14 @@ class Message(MessageCreate):
 
 # --- OAuth Authentication Models ---
 
-class GoogleAuthCallback(BaseModel):
-    """
-    Model for handling Google OAuth callback data.
-    
-    Why this model exists:
-    - Validates that callback contains required 'code' parameter
-    - Optional 'state' parameter for CSRF protection
-    - Ensures data types are correct before processing
-    - Auto-generates API documentation
-    """
-    code: str = Field(
-        ..., 
-        description="Authorization code from Google OAuth flow",
-        min_length=1,  # Ensure code is not empty
-        max_length=2048  # Reasonable limit for OAuth codes
-    )
-    state: Optional[str] = Field(
-        None, 
-        description="CSRF protection parameter (optional but recommended)",
-        max_length=256
+class GoogleLoginRequest(BaseModel):
+    """Payload sent from the SPA after Google sign-in."""
+
+    id_token: str = Field(
+        ...,
+        description="Google-issued ID token returned to the SPA",
+        min_length=10,
+        max_length=4096,
     )
 
 class TokenResponse(BaseModel):
@@ -430,113 +394,71 @@ def _generate_group_text_for_embedding(group: GroupCreate) -> str:
 # --- API Endpoints ---
 
 # ========== AUTHENTICATION ENDPOINTS ==========
-# These endpoints handle the complete OAuth 2.0 flow with Google
+# Modern Google Sign-In flow: SPA posts Google ID token to backend for verification
+
+
+# Lightweight endpoint so the SPA can fetch Google OAuth settings at runtime.
+@app.get("/auth/google/config")
+async def get_google_oauth_config():
+    if not GOOGLE_CLIENT_ID:
+        raise HTTPException(status_code=500, detail="Google OAuth is not configured.")
+    return {"client_id": GOOGLE_CLIENT_ID}
+
 
 @limiter.limit("10/minute")
-@app.get("/auth/google")
-async def google_oauth_start(request: Request):
-    """
-    Start Google OAuth 2.0 authentication flow.
-    
-    Production Flow:
-    1. Generate secure authorization URL with CSRF protection
-    2. Redirect user to Google for authorization
-    3. Google will redirect back to our callback URL with authorization code
-    
-    Security Features:
-    - State parameter for CSRF protection
-    - Specific scopes (email, profile, openid only)
-    - Secure redirect URI validation
-    
-    Response: Redirect URL that frontend should navigate to
-    """
+@app.post("/auth/google_login", response_model=TokenResponse)
+async def google_login(request: Request, login_request: GoogleLoginRequest):
+    """Exchange a Google ID token for our application's JWT pair."""
+
     try:
-        # Generate CSRF protection state parameter
-        import secrets
-        state = secrets.token_urlsafe(32)  # Cryptographically secure random string
-        
-        # Generate Google OAuth URL
-        auth_url = oauth_flow.get_authorization_url(state=state)
-        
-        # In production, you might want to store the state in Redis/database
-        # For now, we'll rely on frontend to handle state validation
-        
-        logger.info("OAuth start initialized",
-                    endpoint="/auth/google",
-                    client_ip=getattr(request.client, 'host', 'unknown'),
-                    has_state=bool(state))
-        return {
-            "auth_url": auth_url,
-            "state": state  # Frontend should include this in callback
-        }
-        
-    except Exception as e:
-        logger.error("OAuth start error", error=str(e))
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to initialize authentication. Please try again."
+        logger.info(
+            "Google login attempt",
+            endpoint="/auth/google_login",
+            client_ip=getattr(request.client, "host", "unknown"),
+            has_token=bool(login_request.id_token),
         )
 
-@limiter.limit("5/minute")
-@app.post("/auth/google/callback", response_model=TokenResponse)
-async def google_oauth_callback(request: Request, callback_data: GoogleAuthCallback):
-    """
-    Handle Google OAuth callback and create user session.
-    
-    This is the most critical endpoint in our auth system:
-    1. Validates authorization code with Google
-    2. Retrieves user information from Google
-    3. Enforces @umbc.edu email requirement
-    4. Creates or updates user in our database
-    5. Generates JWT tokens for our application
-    6. Returns tokens + user info to frontend
-    
-    Security Considerations:
-    - Authorization code is single-use (Google invalidates after exchange)
-    - Email domain validation prevents unauthorized access
-    - Database transaction ensures data consistency
-    - JWT tokens have proper expiration times
-    """
-    try:
-        logger.info("OAuth callback received",
-                    endpoint="/auth/google/callback",
-                    client_ip=getattr(request.client, 'host', 'unknown'),
-                    has_code=bool(callback_data.code),
-                    has_state=bool(callback_data.state))
-        # Step 1: Exchange authorization code for user data + tokens
-        auth_result = await oauth_flow.handle_callback(
-            code=callback_data.code,
-            state=callback_data.state
-        )
-        
-        # Step 2: Create or update user in our database
-        google_user = auth_result["user"]
-        logger.info("Google user retrieved", google_id=google_user.get("id"), email=google_user.get("email"))
-        
-        if async_initialized and user_repo:
-            # Use async database operations
+        google_user = await verify_google_id_token(login_request.id_token)
+        email = google_user.get("email")
+
+        if not validate_umbc_email(email):
+            raise HTTPException(status_code=403, detail="A valid UMBC email address is required.")
+
+        google_id = google_user.get("sub")
+        if not google_id:
+            raise HTTPException(status_code=400, detail="Google token missing required subject claim.")
+
+        display_name = google_user.get("name") or (email.split("@", 1)[0] if email else "Unknown User")
+        sanitized_name = sanitize_string(display_name, max_length=100)
+        picture_url = google_user.get("picture")
+
+        if async_initialized and user_repo and hasattr(user_repo, "create_user"):
             user_record = await user_repo.create_user({
-                'google_id': google_user["id"],
-                'name': sanitize_string(google_user["name"], 100),
-                'email': google_user["email"], 
-                'picture_url': google_user.get("picture")
+                "google_id": google_id,
+                "name": sanitized_name,
+                "email": email,
+                "picture_url": picture_url,
             })
-            logger.info("User persisted (async)", user_id=user_record.get("userId"))
         else:
-            # Fallback to sync database
             user_record = db.create_or_update_oauth_user(
-                google_id=google_user["id"],
-                name=sanitize_string(google_user["name"], 100),
-                email=google_user["email"], 
-                picture_url=google_user.get("picture")
+                google_id=google_id,
+                name=sanitized_name,
+                email=email,
+                picture_url=picture_url,
             )
-            logger.info("User persisted (sync)", user_id=user_record.get("userId"))
-        
-        # Step 3: Update last login timestamp for analytics
+
         db.update_last_login(user_record["userId"])
-        logger.info("Last login updated", user_id=user_record.get("userId"))
-        
-        # Step 4: Format user profile for frontend
+
+        token_payload = {
+            "sub": google_id,
+            "user_id": user_record["userId"],
+            "email": email,
+            "name": sanitized_name,
+        }
+
+        access_token = create_access_token(token_payload)
+        refresh_token = create_refresh_token(token_payload)
+
         user_profile = {
             "id": user_record["userId"],
             "name": user_record["name"],
@@ -544,31 +466,25 @@ async def google_oauth_callback(request: Request, callback_data: GoogleAuthCallb
             "picture": user_record.get("picture_url"),
             "courses": user_record.get("courses", []),
             "bio": user_record.get("bio", ""),
-            "created_at": user_record.get("created_at")
+            "created_at": user_record.get("created_at"),
         }
-        
-        # Step 5: Return complete authentication response
-        logger.info("Authentication completed successfully", user_id=user_record.get("userId"))
+
+        logger.info("Google login successful", user_id=user_record["userId"])
+
         return TokenResponse(
-            access_token=auth_result["access_token"],
-            refresh_token=auth_result["refresh_token"],
-            expires_in=auth_result["expires_in"],
-            user=user_profile
+            access_token=access_token,
+            refresh_token=refresh_token,
+            expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+            user=user_profile,
         )
-        
+
     except AuthError as e:
-        # OAuth-specific errors (domain restriction, Google API failures)
-        logger.warning("OAuth callback failed", error=e.message, status_code=e.status_code)
-        raise HTTPException(
-            status_code=e.status_code,
-            detail=e.message
-        )
+        raise HTTPException(status_code=e.status_code, detail=e.message)
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error("OAuth callback error", error=str(e))
-        raise HTTPException(
-            status_code=500,
-            detail="Authentication failed. Please try again."
-        )
+        logger.error("Google login failed", error=str(e))
+        raise HTTPException(status_code=500, detail="Failed to authenticate with Google.")
 
 @limiter.limit("10/minute")
 @app.post("/auth/refresh", response_model=TokenResponse)
@@ -1080,25 +996,30 @@ async def create_study_group(
 
 @limiter.limit("200/minute")
 @app.get("/groups", response_model=List[Group])
-async def get_groups(request: Request, courseCode: str, offset: int = 0, limit: int = 20):
+async def get_groups(request: Request, courseCode: Optional[str] = None, offset: int = 0, limit: int = 20):
     """
-    Retrieves all groups for a specific course with pagination.
-    
-    Production Performance Updates:
-    - Added pagination to handle large numbers of groups efficiently
-    - Uses async database operations for better concurrency
-    - Limits results to prevent memory issues
+    Retrieve study groups.
+
+    - When `courseCode` is provided: return groups for that course.
+    - When omitted: return groups across all courses (paginated).
+
+    This change makes the "All Groups" page truly show all groups so users
+    can discover study groups from any course, not just their first course.
     """
     if async_initialized and group_repo:
-        # Use async database with pagination
-        groups_data = await group_repo.search_groups("", subject_filter=courseCode)
-        # Apply pagination manually for now
-        paginated_groups = groups_data[offset:offset + limit]
+        if courseCode:
+            groups_data = await group_repo.search_groups("", subject_filter=courseCode)
+            paginated_groups = groups_data[offset:offset + limit]
+        else:
+            groups_data = await group_repo.get_groups_with_pagination(limit=limit, offset=offset)
+            paginated_groups = groups_data
     else:
-        # Fallback to sync database
-        groups_data = db.get_groups_by_course(courseCode)
-        paginated_groups = groups_data
-    
+        if courseCode:
+            groups_data = db.get_groups_by_course(courseCode)
+        else:
+            groups_data = db.get_all_groups()
+        paginated_groups = groups_data[offset:offset + limit]
+
     normalized_groups = [normalize_group_record(group) for group in paginated_groups]
     return [Group(**group) for group in normalized_groups if group]
 
@@ -1748,26 +1669,14 @@ class Message(MessageCreate):
 
 # --- OAuth Authentication Models ---
 
-class GoogleAuthCallback(BaseModel):
-    """
-    Model for handling Google OAuth callback data.
-    
-    Why this model exists:
-    - Validates that callback contains required 'code' parameter
-    - Optional 'state' parameter for CSRF protection
-    - Ensures data types are correct before processing
-    - Auto-generates API documentation
-    """
-    code: str = Field(
-        ..., 
-        description="Authorization code from Google OAuth flow",
-        min_length=1,  # Ensure code is not empty
-        max_length=2048  # Reasonable limit for OAuth codes
-    )
-    state: Optional[str] = Field(
-        None, 
-        description="CSRF protection parameter (optional but recommended)",
-        max_length=256
+class GoogleLoginRequest(BaseModel):
+    """Payload sent from the SPA after Google sign-in."""
+
+    id_token: str = Field(
+        ...,
+        description="Google-issued ID token returned to the SPA",
+        min_length=10,
+        max_length=4096,
     )
 
 class TokenResponse(BaseModel):
@@ -1917,113 +1826,70 @@ def _generate_group_text_for_embedding(group: GroupCreate) -> str:
 # --- API Endpoints ---
 
 # ========== AUTHENTICATION ENDPOINTS ==========
-# These endpoints handle the complete OAuth 2.0 flow with Google
+# Modern Google Sign-In flow: SPA posts Google ID token to backend for verification
+
+
+@app.get("/auth/google/config")
+async def get_google_oauth_config():
+    if not GOOGLE_CLIENT_ID:
+        raise HTTPException(status_code=500, detail="Google OAuth is not configured.")
+    return {"client_id": GOOGLE_CLIENT_ID}
+
 
 @limiter.limit("10/minute")
-@app.get("/auth/google")
-async def google_oauth_start(request: Request):
-    """
-    Start Google OAuth 2.0 authentication flow.
-    
-    Production Flow:
-    1. Generate secure authorization URL with CSRF protection
-    2. Redirect user to Google for authorization
-    3. Google will redirect back to our callback URL with authorization code
-    
-    Security Features:
-    - State parameter for CSRF protection
-    - Specific scopes (email, profile, openid only)
-    - Secure redirect URI validation
-    
-    Response: Redirect URL that frontend should navigate to
-    """
+@app.post("/auth/google_login", response_model=TokenResponse)
+async def google_login(request: Request, login_request: GoogleLoginRequest):
+    """Exchange a Google ID token for our application's JWT pair."""
+
     try:
-        # Generate CSRF protection state parameter
-        import secrets
-        state = secrets.token_urlsafe(32)  # Cryptographically secure random string
-        
-        # Generate Google OAuth URL
-        auth_url = oauth_flow.get_authorization_url(state=state)
-        
-        # In production, you might want to store the state in Redis/database
-        # For now, we'll rely on frontend to handle state validation
-        
-        logger.info("OAuth start initialized",
-                    endpoint="/auth/google",
-                    client_ip=getattr(request.client, 'host', 'unknown'),
-                    has_state=bool(state))
-        return {
-            "auth_url": auth_url,
-            "state": state  # Frontend should include this in callback
-        }
-        
-    except Exception as e:
-        logger.error("OAuth start error", error=str(e))
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to initialize authentication. Please try again."
+        logger.info(
+            "Google login attempt",
+            endpoint="/auth/google_login",
+            client_ip=getattr(request.client, "host", "unknown"),
+            has_token=bool(login_request.id_token),
         )
 
-@limiter.limit("5/minute")
-@app.post("/auth/google/callback", response_model=TokenResponse)
-async def google_oauth_callback(request: Request, callback_data: GoogleAuthCallback):
-    """
-    Handle Google OAuth callback and create user session.
-    
-    This is the most critical endpoint in our auth system:
-    1. Validates authorization code with Google
-    2. Retrieves user information from Google
-    3. Enforces @umbc.edu email requirement
-    4. Creates or updates user in our database
-    5. Generates JWT tokens for our application
-    6. Returns tokens + user info to frontend
-    
-    Security Considerations:
-    - Authorization code is single-use (Google invalidates after exchange)
-    - Email domain validation prevents unauthorized access
-    - Database transaction ensures data consistency
-    - JWT tokens have proper expiration times
-    """
-    try:
-        logger.info("OAuth callback received",
-                    endpoint="/auth/google/callback",
-                    client_ip=getattr(request.client, 'host', 'unknown'),
-                    has_code=bool(callback_data.code),
-                    has_state=bool(callback_data.state))
-        # Step 1: Exchange authorization code for user data + tokens
-        auth_result = await oauth_flow.handle_callback(
-            code=callback_data.code,
-            state=callback_data.state
-        )
-        
-        # Step 2: Create or update user in our database
-        google_user = auth_result["user"]
-        logger.info("Google user retrieved", google_id=google_user.get("id"), email=google_user.get("email"))
-        
-        if async_initialized and user_repo:
-            # Use async database operations
+        google_user = await verify_google_id_token(login_request.id_token)
+        email = google_user.get("email")
+
+        if not validate_umbc_email(email):
+            raise HTTPException(status_code=403, detail="A valid UMBC email address is required.")
+
+        google_id = google_user.get("sub")
+        if not google_id:
+            raise HTTPException(status_code=400, detail="Google token missing required subject claim.")
+
+        display_name = google_user.get("name") or (email.split("@", 1)[0] if email else "Unknown User")
+        sanitized_name = sanitize_string(display_name, max_length=100)
+        picture_url = google_user.get("picture")
+
+        if async_initialized and user_repo and hasattr(user_repo, "create_user"):
             user_record = await user_repo.create_user({
-                'google_id': google_user["id"],
-                'name': sanitize_string(google_user["name"], 100),
-                'email': google_user["email"], 
-                'picture_url': google_user.get("picture")
+                "google_id": google_id,
+                "name": sanitized_name,
+                "email": email,
+                "picture_url": picture_url,
             })
-            logger.info("User persisted (async)", user_id=user_record.get("userId"))
         else:
-            # Fallback to sync database
             user_record = db.create_or_update_oauth_user(
-                google_id=google_user["id"],
-                name=sanitize_string(google_user["name"], 100),
-                email=google_user["email"], 
-                picture_url=google_user.get("picture")
+                google_id=google_id,
+                name=sanitized_name,
+                email=email,
+                picture_url=picture_url,
             )
-            logger.info("User persisted (sync)", user_id=user_record.get("userId"))
-        
-        # Step 3: Update last login timestamp for analytics
+
         db.update_last_login(user_record["userId"])
-        logger.info("Last login updated", user_id=user_record.get("userId"))
-        
-        # Step 4: Format user profile for frontend
+
+        token_payload = {
+            "sub": google_id,
+            "user_id": user_record["userId"],
+            "email": email,
+            "name": sanitized_name,
+        }
+
+        access_token = create_access_token(token_payload)
+        refresh_token = create_refresh_token(token_payload)
+
         user_profile = {
             "id": user_record["userId"],
             "name": user_record["name"],
@@ -2031,31 +1897,25 @@ async def google_oauth_callback(request: Request, callback_data: GoogleAuthCallb
             "picture": user_record.get("picture_url"),
             "courses": user_record.get("courses", []),
             "bio": user_record.get("bio", ""),
-            "created_at": user_record.get("created_at")
+            "created_at": user_record.get("created_at"),
         }
-        
-        # Step 5: Return complete authentication response
-        logger.info("Authentication completed successfully", user_id=user_record.get("userId"))
+
+        logger.info("Google login successful", user_id=user_record["userId"])
+
         return TokenResponse(
-            access_token=auth_result["access_token"],
-            refresh_token=auth_result["refresh_token"],
-            expires_in=auth_result["expires_in"],
-            user=user_profile
+            access_token=access_token,
+            refresh_token=refresh_token,
+            expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+            user=user_profile,
         )
-        
+
     except AuthError as e:
-        # OAuth-specific errors (domain restriction, Google API failures)
-        logger.warning("OAuth callback failed", error=e.message, status_code=e.status_code)
-        raise HTTPException(
-            status_code=e.status_code,
-            detail=e.message
-        )
+        raise HTTPException(status_code=e.status_code, detail=e.message)
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error("OAuth callback error", error=str(e))
-        raise HTTPException(
-            status_code=500,
-            detail="Authentication failed. Please try again."
-        )
+        logger.error("Google login failed", error=str(e))
+        raise HTTPException(status_code=500, detail="Failed to authenticate with Google.")
 
 @limiter.limit("10/minute")
 @app.post("/auth/refresh", response_model=TokenResponse)
@@ -2556,25 +2416,27 @@ async def create_study_group(
 
 @limiter.limit("200/minute")
 @app.get("/groups", response_model=List[Group])
-async def get_groups(request: Request, courseCode: str, offset: int = 0, limit: int = 20):
+async def get_groups(request: Request, courseCode: Optional[str] = None, offset: int = 0, limit: int = 20):
     """
-    Retrieves all groups for a specific course with pagination.
-    
-    Production Performance Updates:
-    - Added pagination to handle large numbers of groups efficiently
-    - Uses async database operations for better concurrency
-    - Limits results to prevent memory issues
+    Retrieve study groups (duplicate route definition for legacy reasons).
+
+    See earlier definition for detailed behavior. Kept in sync to avoid
+    breaking any imports in code paths that might reference this block.
     """
     if async_initialized and group_repo:
-        # Use async database with pagination
-        groups_data = await group_repo.search_groups("", subject_filter=courseCode)
-        # Apply pagination manually for now
-        paginated_groups = groups_data[offset:offset + limit]
+        if courseCode:
+            groups_data = await group_repo.search_groups("", subject_filter=courseCode)
+            paginated_groups = groups_data[offset:offset + limit]
+        else:
+            groups_data = await group_repo.get_groups_with_pagination(limit=limit, offset=offset)
+            paginated_groups = groups_data
     else:
-        # Fallback to sync database
-        groups_data = db.get_groups_by_course(courseCode)
-        paginated_groups = groups_data
-    
+        if courseCode:
+            groups_data = db.get_groups_by_course(courseCode)
+        else:
+            groups_data = db.get_all_groups()
+        paginated_groups = groups_data[offset:offset + limit]
+
     normalized_groups = [normalize_group_record(group) for group in paginated_groups]
     return [Group(**group) for group in normalized_groups if group]
 

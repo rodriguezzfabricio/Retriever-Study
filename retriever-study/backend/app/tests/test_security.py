@@ -14,6 +14,7 @@ Run with: pytest app/tests/test_security.py -v
 import pytest
 import time
 from fastapi.testclient import TestClient
+from app import main as main_module
 from app.main import app
 from app.core.security import sanitize_string, validate_ai_input, detect_suspicious_input
 
@@ -38,6 +39,27 @@ def malicious_inputs():
         "command_injection": "; rm -rf /",
         "path_traversal": "../../../etc/passwd"
     }
+
+
+class TestGoogleConfigEndpoint:
+    """Validate public Google OAuth configuration exposure"""
+
+    def test_google_config_returns_client_id(self, monkeypatch):
+        monkeypatch.setattr(main_module, "GOOGLE_CLIENT_ID", "test-client-id", raising=False)
+
+        response = client.get("/auth/google/config")
+
+        assert response.status_code == 200
+        assert response.json() == {"client_id": "test-client-id"}
+
+    def test_google_config_missing_id(self, monkeypatch):
+        monkeypatch.setattr(main_module, "GOOGLE_CLIENT_ID", None, raising=False)
+
+        response = client.get("/auth/google/config")
+
+        assert response.status_code == 500
+        assert response.json()["detail"] == "Google OAuth is not configured."
+
 
 class TestRateLimiting:
     """Test rate limiting protection on all endpoints"""
