@@ -23,7 +23,17 @@ async function apiRequest(endpoint, options = {}) {
   const config = { ...defaultOptions, ...options, headers: { ...defaultOptions.headers, ...options.headers } };
 
   // Get the token from localStorage
-  const token = localStorage.getItem('authToken');
+  const authData = localStorage.getItem('authData');
+  let token = null;
+  
+  if (authData) {
+    try {
+      const parsedAuthData = JSON.parse(authData);
+      token = parsedAuthData.access_token;
+    } catch (error) {
+      console.error('Failed to parse auth data from localStorage:', error);
+    }
+  }
   
   // If a token exists, add it to the Authorization header
   if (token) {
@@ -63,8 +73,8 @@ async function apiRequest(endpoint, options = {}) {
 export const healthCheck = () => apiRequest('/health');
 
 // Authentication
-export const googleLogin = (idToken) =>
-  apiRequest('/auth/google_login', {
+export const exchangeGoogleToken = (idToken) =>
+  apiRequest('/auth/google/callback', {
     method: 'POST',
     body: JSON.stringify({ id_token: idToken }),
   });
@@ -104,8 +114,39 @@ export const createGroup = (groupData, ownerId) =>
     body: JSON.stringify(groupData),
   });
 
-export const getAllGroups = (offset = 0, limit = 50) =>
-  apiRequest(`/groups?offset=${offset}&limit=${limit}`);
+export const getAllGroups = async (offset = 0, limit = 50) => {
+  const url = `${API_BASE_URL}/groups?offset=${offset}&limit=${limit}`;
+  const headers = { 'Content-Type': 'application/json' };
+  
+  // Get the token from the stored auth data
+  const authData = localStorage.getItem('authData');
+  let token = null;
+  
+  if (authData) {
+    try {
+      const parsedAuthData = JSON.parse(authData);
+      token = parsedAuthData.access_token;
+    } catch (error) {
+      console.error('Failed to parse auth data from localStorage:', error);
+    }
+  }
+  
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const res = await fetch(url, { headers });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new ApiError(
+      errorData.detail?.error || `HTTP ${res.status}`,
+      res.status,
+      errorData
+    );
+  }
+  const items = await res.json();
+  const totalHeader = res.headers.get('X-Total-Count');
+  const total = totalHeader ? parseInt(totalHeader, 10) : null;
+  return { items, total };
+};
 
 export const getGroupsByCourse = (courseCode) =>
   apiRequest(`/groups?courseCode=${encodeURIComponent(courseCode)}`);
@@ -115,6 +156,14 @@ export const joinGroup = (groupId, userId) =>
     method: 'POST',
     body: JSON.stringify({ userId }),
   });
+
+export const leaveGroup = (groupId) =>
+  apiRequest(`/groups/${groupId}/leave`, {
+    method: 'POST',
+  });
+
+export const getTrendingGroups = (limit = 6) =>
+  apiRequest(`/groups/trending?limit=${limit}`);
 
 // AI Features
 export const getRecommendations = (userId, limit = 5) =>

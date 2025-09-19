@@ -95,29 +95,33 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = (userData, authToken) => {
-    console.log("AuthContext: Logging in user", userData);
+  const login = (authResponse) => {
+    const { access_token, refresh_token, user } = authResponse;
+    
     let decoded = null;
     try {
-      decoded = jwtDecode(authToken);
+      decoded = jwtDecode(access_token);
     } catch (error) {
       console.error('AuthContext: Failed to decode auth token during login', error);
     }
 
-    const normalizedUser = buildUserProfile(userData, decoded);
+    const normalizedUser = buildUserProfile(user, decoded);
     setUser(normalizedUser);
-    setToken(authToken);
-    persist(normalizedUser, authToken);
-    scheduleProactiveRefresh(authToken);
+    setToken(access_token);
+    
+    // Store the entire auth response object in localStorage
+    localStorage.setItem('authData', JSON.stringify(authResponse));
+    persist(normalizedUser, access_token, refresh_token);
+    scheduleProactiveRefresh(access_token);
   };
 
   const logout = () => {
-    console.log("AuthContext: Logging out user");
     setUser(null);
     setToken(null);
     localStorage.removeItem('authToken');
     localStorage.removeItem('userData');
     localStorage.removeItem('refreshToken');
+    localStorage.removeItem('authData');
     clearTimers();
   };
 
@@ -128,7 +132,6 @@ export const AuthProvider = ({ children }) => {
       try {
         const decodedUser = jwtDecode(tokenFromStorage); // Corrected usage
         if (decodedUser.exp * 1000 < Date.now()) {
-          console.log("AuthContext: Token expired, logging out.");
           logout();
         }
       } catch (error) {
@@ -141,9 +144,10 @@ export const AuthProvider = ({ children }) => {
   // Keep other tabs in sync with this tab's auth state.
   useEffect(() => {
     const handleStorage = (event) => {
-      if (event.key === 'authToken' || event.key === 'userData') {
+      if (event.key === 'authToken' || event.key === 'userData' || event.key === 'authData') {
         const tokenFromStorage = localStorage.getItem('authToken');
         const userFromStorage = localStorage.getItem('userData');
+        const authDataFromStorage = localStorage.getItem('authData');
 
         if (!tokenFromStorage || !userFromStorage) {
           setToken(null);

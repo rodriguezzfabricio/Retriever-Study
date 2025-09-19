@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Header.css';
 
 const Header = ({ onSearch }) => {
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [term, setTerm] = useState('');
 
   const handleLogout = () => {
@@ -21,6 +22,13 @@ const Header = ({ onSearch }) => {
     navigate('/search');
   };
 
+  const pathname = location.pathname;
+  const showSearchBar = (
+    pathname === '/groups' ||
+    pathname === '/search' ||
+    pathname === '/recommendations'
+  );
+
   return (
     <header className="header">
       <div className="header-container">
@@ -30,21 +38,23 @@ const Header = ({ onSearch }) => {
         </Link>
 
         {/* Search Bar - Center like Zara */}
-        <div className="header-search">
-          <form onSubmit={submitSearch} role="search" aria-label="Search groups">
-            <input
-              className="search-input"
-              type="search"
-              placeholder="Search groups (course, topic, etc.)"
-              value={term}
-              onChange={(e) => setTerm(e.target.value)}
-              aria-label="Search groups"
-            />
-            <button type="submit" className="search-button" aria-label="Search">
-              🔍
-            </button>
-          </form>
-        </div>
+        {showSearchBar && (
+          <div className="header-search">
+            <form onSubmit={submitSearch} role="search" aria-label="Search groups">
+              <input
+                className="search-input"
+                type="search"
+                placeholder="Search groups (course, topic, etc.)"
+                value={term}
+                onChange={(e) => setTerm(e.target.value)}
+                aria-label="Search groups"
+              />
+              <button type="submit" className="search-button" aria-label="Search">
+                🔍
+              </button>
+            </form>
+          </div>
+        )}
 
         {/* Utility Links - Right side like Zara */}
         <nav className="header-nav">

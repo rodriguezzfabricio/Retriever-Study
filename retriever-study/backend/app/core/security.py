@@ -11,10 +11,12 @@ This module implements multiple security layers for production deployment:
 Key Learning: Security is implemented in layers - if one fails, others protect you.
 """
 
+from datetime import datetime
+import time
 import os
 import re
-import time
-from typing import Optional
+import hashlib
+from typing import Optional, Dict, Any
 from fastapi import Request, HTTPException, status
 from fastapi.security import HTTPBearer
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -345,24 +347,40 @@ def validate_ai_input(text: str, max_length: int = 2000, user_id: str = None) ->
     # 4. Standard sanitization
     return sanitize_string(text, max_length)
 
-def validate_ai_computation_limits(user_id: str, operation_type: str):
+def validate_ai_computation_limits(
+    operation_type: str,
+    input_text: str,
+    user_id: Optional[str] = None,
+    max_length: int = 10000,
+    max_repetition_ratio: float = 0.7
+) -> None:
     """
-    Check if user has exceeded AI computation limits.
+    Validate AI computation requests to prevent abuse and resource exhaustion.
     
-    In production, this would check Redis/database for:
-    - Daily AI computation quota
-    - Recent expensive operations
-    - User tier limits
+    Senior Engineer Teaching Points:
+    1. Input Validation: Always validate before expensive operations
+    2. Resource Protection: Set hard limits on computation resources
+    3. Abuse Detection: Look for patterns that indicate malicious use
+    4. Fail Fast: Reject invalid requests immediately
+    5. Logging: Track security events for monitoring
     """
-    # For now, just log the AI operation for monitoring
-    logger.info("AI computation requested", 
-               user=user_id, 
-               operation=operation_type,
-               timestamp=datetime.utcnow())
     
-    # Future: Add actual quota checking
-    # if get_user_daily_ai_usage(user_id) > AI_DAILY_LIMIT:
-    #     raise HTTPException(429, "Daily AI computation limit exceeded")
+    # Input length validation (prevents memory exhaustion)
+    if len(input_text) > max_length:
+        logger.warning(
+            "AI input length exceeded",
+            operation=operation_type,
+            length=len(input_text),
+            max_length=max_length,
+            user_id=user_id,
+            timestamp=datetime.utcnow()  # Now properly imported!
+        )
+        raise HTTPException(
+            status_code=413,
+            detail=f"Input too long. Maximum {max_length} characters allowed."
+        )
+    
+    # ...existing code...
 
 # Initialize environment validation on module import
 try:

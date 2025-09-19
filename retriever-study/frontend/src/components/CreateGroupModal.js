@@ -14,13 +14,32 @@ const CreateGroupModal = ({
   const [location, setLocation] = useState('TBD');
   const [tags, setTags] = useState('');
   const [maxMembers, setMaxMembers] = useState(8);
+  const [department, setDepartment] = useState(defaultCourse ? defaultCourse.substring(0, 4).toUpperCase() : '');
+  const [difficulty, setDifficulty] = useState('');
+  const [meetingType, setMeetingType] = useState('');
+  const [timeSlot, setTimeSlot] = useState('');
+  const [studyStyles, setStudyStyles] = useState([]);
+  const [groupSize, setGroupSize] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setCourseCode(defaultCourse);
+      setDepartment(defaultCourse ? defaultCourse.substring(0, 4).toUpperCase() : '');
+      setDifficulty('');
+      setMeetingType('');
+      setTimeSlot('');
+      setStudyStyles([]);
+      setGroupSize('');
     }
   }, [isOpen, defaultCourse]);
+
+  const departmentOptions = ['CMSC', 'MATH', 'PHYS', 'CHEM', 'BIOL', 'STAT'];
+  const difficultyOptions = ['Beginner', 'Intermediate', 'Advanced'];
+  const meetingTypeOptions = ['In-person', 'Online', 'Hybrid'];
+  const timeSlotOptions = ['Morning', 'Afternoon', 'Evening', 'Weekend'];
+  const studyStyleOptions = ['Group Discussion', 'Silent Study', 'Practice Problems', 'Exam Prep'];
+  const groupSizeOptions = ['Small (2-4)', 'Medium (5-8)', 'Large (9+)'];
 
   if (!isOpen) return null;
 
@@ -41,6 +60,12 @@ const CreateGroupModal = ({
         location: location.trim() || 'TBD',
         maxMembers: Number(maxMembers) || 8,
         semester: null,
+        department: department || null,
+        difficulty: difficulty || null,
+        meetingType: meetingType || null,
+        timeSlot: timeSlot || null,
+        studyStyle: studyStyles,
+        groupSize: groupSize || null,
       };
       await onCreated(payload);
       // Reset for next time
@@ -49,6 +74,12 @@ const CreateGroupModal = ({
       setTags('');
       setLocation('TBD');
       setMaxMembers(8);
+      setDepartment(defaultCourse ? defaultCourse.substring(0, 4).toUpperCase() : '');
+      setDifficulty('');
+      setMeetingType('');
+      setTimeSlot('');
+      setStudyStyles([]);
+      setGroupSize('');
     } finally {
       setSubmitting(false);
     }
@@ -68,7 +99,13 @@ const CreateGroupModal = ({
                 <label>Course Code</label>
                 <input
                   value={courseCode}
-                  onChange={(e) => setCourseCode(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setCourseCode(value);
+                    if (!department) {
+                      setDepartment(value.substring(0, 4).toUpperCase());
+                    }
+                  }}
                   placeholder="e.g., CS101"
                   required
                 />
@@ -82,6 +119,48 @@ const CreateGroupModal = ({
                   value={maxMembers}
                   onChange={(e) => setMaxMembers(e.target.value)}
                 />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label>Department</label>
+                <select value={department} onChange={(e) => setDepartment(e.target.value)}>
+                  <option value="">Select department</option>
+                  {departmentOptions.map(option => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Difficulty</label>
+                <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
+                  <option value="">Select difficulty</option>
+                  {difficultyOptions.map(option => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label>Meeting Type</label>
+                <select value={meetingType} onChange={(e) => setMeetingType(e.target.value)}>
+                  <option value="">Select meeting format</option>
+                  {meetingTypeOptions.map(option => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Preferred Time</label>
+                <select value={timeSlot} onChange={(e) => setTimeSlot(e.target.value)}>
+                  <option value="">Select time</option>
+                  {timeSlotOptions.map(option => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
               </div>
             </div>
 
@@ -123,6 +202,41 @@ const CreateGroupModal = ({
                 />
               </div>
             </div>
+
+            <div className="form-group">
+              <label>Study Style</label>
+              <div className="study-style-options">
+                {studyStyleOptions.map(option => {
+                  const selected = studyStyles.includes(option);
+                  return (
+                    <label key={option} className={`pill-option ${selected ? 'pill-selected' : ''}`}>
+                      <input
+                        type="checkbox"
+                        checked={selected}
+                        onChange={() => {
+                          setStudyStyles(prev => (
+                            prev.includes(option)
+                              ? prev.filter(item => item !== option)
+                              : [...prev, option]
+                          ));
+                        }}
+                      />
+                      <span>{option}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label>Group Size Goal</label>
+              <select value={groupSize} onChange={(e) => setGroupSize(e.target.value)}>
+                <option value="">Select size</option>
+                {groupSizeOptions.map(option => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+            </div>
             <p className="helper-text">You’ll be added as the first member automatically.</p>
           </div>
           <div className="modal-footer">
@@ -138,4 +252,3 @@ const CreateGroupModal = ({
 };
 
 export default CreateGroupModal;
-

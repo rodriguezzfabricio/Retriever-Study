@@ -2,7 +2,7 @@ import React from 'react';
 import { GoogleLogin } from '@react-oauth/google';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { googleLogin, ApiError } from '../services/api';
+import { exchangeGoogleToken, ApiError } from '../services/api';
 
 import './Login.css';
 import usePageTitle from '../hooks/usePageTitle';
@@ -19,13 +19,10 @@ const Login = () => {
         throw new Error('No credential returned from Google.');
       }
 
-      const authResponse = await googleLogin(idToken);
-
-      // Persist refresh token for future silent refresh flows (temporary storage until backend issues httpOnly cookies)
-      localStorage.setItem('refreshToken', authResponse.refresh_token);
+      const authResponse = await exchangeGoogleToken(idToken);
 
       // Use our application's access token and user profile
-      login(authResponse.user, authResponse.access_token);
+      login(authResponse);
       navigate('/groups');
     } catch (error) {
       if (error instanceof ApiError) {

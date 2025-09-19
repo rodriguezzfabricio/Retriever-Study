@@ -1,6 +1,7 @@
 import sqlite3
 import json
 import uuid
+from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 
 DEFAULT_MAX_MEMBERS = 8
@@ -94,7 +95,15 @@ class Database:
             embedding TEXT,
             maxMembers INTEGER DEFAULT 8,
             semester TEXT,
-            expires_at TEXT
+            expires_at TEXT,
+            department TEXT,
+            difficulty TEXT,
+            meetingType TEXT,
+            timeSlot TEXT,
+            studyStyle TEXT,
+            groupSize TEXT,
+            created_at TEXT DEFAULT (datetime('now')),
+            lastActivity TEXT
         );
         """)
 
@@ -119,6 +128,25 @@ class Database:
             cursor.execute("ALTER TABLE groups ADD COLUMN semester TEXT")
         if "expires_at" not in existing_group_cols:
             cursor.execute("ALTER TABLE groups ADD COLUMN expires_at TEXT")
+        if "department" not in existing_group_cols:
+            cursor.execute("ALTER TABLE groups ADD COLUMN department TEXT")
+        if "difficulty" not in existing_group_cols:
+            cursor.execute("ALTER TABLE groups ADD COLUMN difficulty TEXT")
+        if "meetingType" not in existing_group_cols:
+            cursor.execute("ALTER TABLE groups ADD COLUMN meetingType TEXT")
+        if "timeSlot" not in existing_group_cols:
+            cursor.execute("ALTER TABLE groups ADD COLUMN timeSlot TEXT")
+        if "studyStyle" not in existing_group_cols:
+            cursor.execute("ALTER TABLE groups ADD COLUMN studyStyle TEXT")
+        if "groupSize" not in existing_group_cols:
+            cursor.execute("ALTER TABLE groups ADD COLUMN groupSize TEXT")
+        if "created_at" not in existing_group_cols:
+            cursor.execute("ALTER TABLE groups ADD COLUMN created_at TEXT")
+            cursor.execute(
+                "UPDATE groups SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL"
+            )
+        if "lastActivity" not in existing_group_cols:
+            cursor.execute("ALTER TABLE groups ADD COLUMN lastActivity TEXT")
 
         conn.commit()
         conn.close()
@@ -328,6 +356,14 @@ class Database:
         group["maxMembers"] = self._normalize_max_members(group.get("maxMembers"))
         group["semester"] = group.get("semester")
         group["expires_at"] = group.get("expires_at")
+        group["department"] = group.get("department")
+        group["difficulty"] = group.get("difficulty")
+        group["meetingType"] = group.get("meetingType")
+        group["timeSlot"] = group.get("timeSlot")
+        group["studyStyle"] = json.loads(group["studyStyle"]) if group.get("studyStyle") else []
+        group["groupSize"] = group.get("groupSize")
+        group["created_at"] = group.get("created_at")
+        group["lastActivity"] = group.get("lastActivity") or group.get("created_at")
         return group
 
     # --- Group Methods ---
@@ -343,7 +379,13 @@ class Database:
         owner_id: str,
         max_members: int = DEFAULT_MAX_MEMBERS,
         semester: Optional[str] = None,
-        expires_at: Optional[str] = None
+        expires_at: Optional[str] = None,
+        department: Optional[str] = None,
+        difficulty: Optional[str] = None,
+        meeting_type: Optional[str] = None,
+        time_slot: Optional[str] = None,
+        study_style: Optional[List[str]] = None,
+        group_size: Optional[str] = None
     ) -> Dict[str, Any]:
         """Creates a new group and stores it in the database."""
         conn = self._get_connection()
@@ -354,13 +396,18 @@ class Database:
         time_prefs_json = json.dumps(time_prefs)
         members_json = json.dumps([owner_id])  # Owner is first member
         normalized_max_members = self._normalize_max_members(max_members)
-        
+        created_at = datetime.utcnow().replace(tzinfo=timezone.utc).isoformat()
+        last_activity = created_at
+        study_style_json = json.dumps(study_style or [])
+
         cursor.execute("""
             INSERT INTO groups (
                 groupId, courseCode, title, description, tags, timePrefs, location, ownerId,
-                members, embedding, maxMembers, semester, expires_at
+                members, embedding, maxMembers, semester, expires_at,
+                department, difficulty, meetingType, timeSlot, studyStyle, groupSize,
+                created_at, lastActivity
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             group_id,
             course_code,
@@ -374,7 +421,15 @@ class Database:
             None,
             normalized_max_members,
             semester,
-            expires_at
+            expires_at,
+            department,
+            difficulty,
+            meeting_type,
+            time_slot,
+            study_style_json,
+            group_size,
+            created_at,
+            last_activity
         ))
         conn.commit()
         conn.close()
@@ -426,10 +481,44 @@ class Database:
         conn = self._get_connection()
         cursor = conn.cursor()
         members_json = json.dumps(group["members"])
-        cursor.execute("UPDATE groups SET members = ? WHERE groupId = ?", (members_json, group_id))
+        timestamp = datetime.utcnow().replace(tzinfo=timezone.utc).isoformat()
+        cursor.execute(
+            "UPDATE groups SET members = ?, lastActivity = ? WHERE groupId = ?",
+            (members_json, timestamp, group_id)
+        )
         conn.commit()
         conn.close()
-        
+
+        return self.get_group_by_id(group_id)
+
+    def leave_group(self, group_id: str, user_id: str) -> Optional[Dict[str, Any]]:
+        """Removes a user from a group's member list.
+
+        Business rules:
+        - No-op if group doesn't exist.
+        - No-op if user is not a member.
+        - Owner can leave; ownership transfer is not handled here (future feature).
+        """
+        group = self.get_group_by_id(group_id)
+        if not group:
+            return None
+
+        if user_id not in group["members"]:
+            return group
+
+        group["members"] = [m for m in group["members"] if m != user_id]
+
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        members_json = json.dumps(group["members"])
+        timestamp = datetime.utcnow().replace(tzinfo=timezone.utc).isoformat()
+        cursor.execute(
+            "UPDATE groups SET members = ?, lastActivity = ? WHERE groupId = ?",
+            (members_json, timestamp, group_id)
+        )
+        conn.commit()
+        conn.close()
+
         return self.get_group_by_id(group_id)
 
     def update_group_embedding(self, group_id: str, embedding: List[float]):
@@ -471,7 +560,82 @@ class Database:
                 user_groups.append(formatted)
         return user_groups
 
+    def get_trending_groups(self, limit: int = 5) -> List[Dict[str, Any]]:
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT groupId, COUNT(*) AS recentCount, MAX(createdAt) AS lastMessageAt
+            FROM messages
+            WHERE createdAt >= datetime('now', '-7 day')
+            GROUP BY groupId
+            """
+        )
+        rows = cursor.fetchall()
+        conn.close()
+
+        activity_map = {
+            row["groupId"]: {
+                "recentCount": row["recentCount"] or 0,
+                "lastMessageAt": row["lastMessageAt"],
+            }
+            for row in rows or []
+        }
+
+        groups = self.get_all_groups()
+        if not groups:
+            return []
+
+        now = datetime.utcnow().replace(tzinfo=timezone.utc)
+        scored: List[Dict[str, Any]] = []
+        for group in groups:
+            group_id = group.get("groupId")
+            metrics = activity_map.get(group_id, {})
+            members = group.get("members", []) or []
+            max_members = group.get("maxMembers") or DEFAULT_MAX_MEMBERS
+            fill_ratio = len(members) / max_members if max_members else 0.0
+
+            created_dt = self._safe_parse_iso(group.get("created_at")) or now
+            last_activity_dt = self._safe_parse_iso(group.get("lastActivity")) or created_dt
+            last_message_dt = self._safe_parse_iso(metrics.get("lastMessageAt"))
+            if last_message_dt and last_message_dt > last_activity_dt:
+                last_activity_dt = last_message_dt
+
+            hours_since_activity = max((now - last_activity_dt).total_seconds() / 3600, 0)
+            freshness_score = max(0.0, 1.0 - min(hours_since_activity / 168, 1.0))
+            days_since_created = max((now - created_dt).total_seconds() / 86400, 0)
+            launch_boost = max(0.0, 1.0 - min(days_since_created / 7, 1.0))
+            recent_count = metrics.get("recentCount", 0)
+
+            score = recent_count * 2.5 + fill_ratio * 2.0 + freshness_score * 3.0 + launch_boost
+
+            enriched = dict(group)
+            enriched["lastActivity"] = self._to_iso(last_activity_dt)
+            enriched["recentActivityScore"] = round(score, 3)
+            enriched["fillingUpFast"] = fill_ratio >= 0.75
+            enriched["startsSoon"] = days_since_created <= 7
+            enriched["lastMessageAt"] = self._to_iso(last_activity_dt)
+            enriched["_trend_score"] = score
+            scored.append(enriched)
+
+        scored.sort(key=lambda g: (g.get("_trend_score", 0), g.get("lastActivity")), reverse=True)
+        top = scored[:limit]
+        for item in top:
+            item.pop("_trend_score", None)
+        return top
+
     # --- Message Methods ---
+
+    def update_group_last_activity(self, group_id: str, timestamp: Optional[str] = None):
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        recorded = timestamp or datetime.utcnow().replace(tzinfo=timezone.utc).isoformat()
+        cursor.execute(
+            "UPDATE groups SET lastActivity = ? WHERE groupId = ?",
+            (recorded, group_id)
+        )
+        conn.commit()
+        conn.close()
 
     def create_message(self, group_id: str, sender_id: str, content: str, toxicity_score: float) -> Dict[str, Any]:
         """Creates a new message and stores it in the database."""
@@ -489,6 +653,8 @@ class Database:
         cursor.execute("SELECT * FROM messages WHERE messageId = ?", (message_id,))
         new_message = dict(cursor.fetchone())
         conn.close()
+
+        self.update_group_last_activity(group_id, new_message.get("createdAt"))
         
         return new_message
 
@@ -505,6 +671,22 @@ class Database:
         
         # Return messages in chronological order (oldest first)
         return [dict(row) for row in reversed(rows)]
+
+    @staticmethod
+    def _safe_parse_iso(value: Optional[str]) -> Optional[datetime]:
+        if not value:
+            return None
+        try:
+            normalized = value.replace("Z", "+00:00")
+            return datetime.fromisoformat(normalized)
+        except (ValueError, TypeError):
+            return None
+
+    @staticmethod
+    def _to_iso(dt: datetime) -> str:
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(timezone.utc).isoformat()
 
 
 # Singleton instance of the Database class to be used across the application
