@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getGroupDetails, getMessages, summarizeChat, joinGroup } from '../services/api';
-import { connectSocket, disconnectSocket, joinRoom, leaveRoom, sendChatMessage, onNewMessage } from '../services/socket';
+import { getGroupDetails, getMessages, summarizeChat, joinGroup, leaveGroup } from '../services/api';
+import { connectSocket, disconnectSocket, joinRoom, leaveRoom, sendChatMessage, onNewMessage, onConnectionState, SOCKET_STATE } from '../services/socket';
 import './GroupDetail.css';
 import usePageTitle from '../hooks/usePageTitle';
 
@@ -17,11 +17,18 @@ const GroupDetail = () => {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [sending, setSending] = useState(false);
+  // note: remove unused 'sending' state to satisfy lint
   const [summary, setSummary] = useState([]);
   const [showSummary, setShowSummary] = useState(false);
+  const [wsState, setWsState] = useState(SOCKET_STATE.DISCONNECTED);
 
-  const isMember = group && user ? group.members.includes(user.sub) : false;
+  const isMember = group && user ? (
+    (Array.isArray(group.members) && (
+      group.members.includes(user.sub) ||
+      (user.id && group.members.includes(user.id)) ||
+      (user.userId && group.members.includes(user.userId))
+    ))
+  ) : false;
 
   // Title should reflect the group name when known
   usePageTitle(group?.name ? `Group: ${group.name}` : 'Group');
@@ -34,10 +41,10 @@ const GroupDetail = () => {
       try {
         const groupData = await getGroupDetails(groupId);
         setGroup(groupData);
-        const messagesData = await getMessages(groupId, 100);
-        setMessages(messagesData);
+        // Don't fetch messages here - let WebSocket handle it
+        // This prevents duplicate messages when WebSocket sends history
+        setMessages([]);
       } catch (err) {
-        console.error('Failed to load group data:', err);
         setError('Failed to load group details.');
       } finally {
         setLoading(false);
@@ -52,17 +59,53 @@ const GroupDetail = () => {
       connectSocket();
       joinRoom(groupId);
 
-      onNewMessage((newMessage) => {
-        setMessages(prevMessages => [...prevMessages, newMessage]);
-      });
+      const unsubscribeMsg = onNewMessage((newMessage) => {
+        setMessages(prevMessages => {
+          // Check for duplicates based on message ID
+          const isDuplicate = prevMessages.some(msg => msg.id === newMessage.id);
+          if (isDuplicate) {
+            return prevMessages;
+          }
+          return [...prevMessages, newMessage];
+        });
+      }, groupId);
+      const unsubscribeState = onConnectionState(groupId, setWsState);
 
       // Cleanup on component unmount
       return () => {
+        try { unsubscribeMsg && unsubscribeMsg(); } catch (e) {}
+        try { unsubscribeState && unsubscribeState(); } catch (e) {}
         leaveRoom(groupId);
         disconnectSocket();
       };
     }
   }, [groupId, isMember]);
+
+  // Fallback: If WebSocket fails to load history, fetch via REST API
+  useEffect(() => {
+    if (wsState === SOCKET_STATE.ERROR && isMember && messages.length === 0) {
+      // Only fetch if we have no messages and WebSocket is in error state
+      const fetchMessagesFallback = async () => {
+        try {
+          const messagesData = await getMessages(groupId, 100);
+          const normalized = Array.isArray(messagesData) ? messagesData.map(m => ({
+            id: m.messageId || m.id,
+            groupId: m.groupId || groupId,
+            senderId: m.senderId,
+            senderName: m.senderName || 'Member',
+            content: m.content,
+            timestamp: m.createdAt || m.timestamp,
+          })) : [];
+          setMessages(normalized);
+        } catch (err) {
+        }
+      };
+      
+      // Add a small delay to allow WebSocket to retry first
+      const timeoutId = setTimeout(fetchMessagesFallback, 2000);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [wsState, isMember, groupId, messages.length]);
 
   useEffect(() => {
     scrollToBottom();
@@ -94,7 +137,6 @@ const GroupDetail = () => {
       const summaryData = await summarizeChat(groupId);
       setSummary(summaryData.bullets || []);
     } catch (err) {
-      console.error('Failed to get summary:', err);
       setSummary(['Failed to generate summary.']);
     }
   };
@@ -106,8 +148,29 @@ const GroupDetail = () => {
       const updatedGroupData = await getGroupDetails(groupId);
       setGroup(updatedGroupData);
     } catch (err) {
-      console.error('Failed to join group:', err);
       alert('Failed to join group.');
+    }
+  };
+
+  const handleLeaveGroup = async () => {
+    if (!isAuthenticated) return;
+    const confirmLeave = window.confirm('Are you sure you want to leave this group?');
+    if (!confirmLeave) return;
+    
+    try {
+      const response = await leaveGroup(groupId);
+      
+      // Refresh group data to get updated member list
+      const updatedGroupData = await getGroupDetails(groupId);
+      setGroup(updatedGroupData);
+      
+      // Show success message
+      alert('Successfully left the group!');
+    } catch (err) {
+      
+      // Show more detailed error message
+      const errorMessage = err.message || err.detail || 'Failed to leave group.';
+      alert(`Error: ${errorMessage}`);
     }
   };
 
@@ -134,6 +197,7 @@ const GroupDetail = () => {
         <div className="group-actions">
           <button className="summarize-btn" onClick={handleSummarizeChat}>SUMMARIZE</button>
           {!isMember && <button className="join-group-btn" onClick={handleJoinGroup}>JOIN</button>}
+          {isMember && <button className="join-group-btn" onClick={handleLeaveGroup}>LEAVE</button>}
         </div>
       </div>
 
@@ -152,15 +216,21 @@ const GroupDetail = () => {
       ) : (
         <div className="chat-container">
           <div className="messages-container">
-            {messages.map((msg) => (
-              <div key={msg.id} className={`message ${msg.senderId === user.sub ? 'own-message' : 'other-message'}`}>
+            <div className="connection-status" aria-live="polite" style={{ fontSize: 12, color: '#666', padding: '4px 0' }}>
+              {wsState === SOCKET_STATE.CONNECTING && 'Connecting...'}
+              {wsState === SOCKET_STATE.DISCONNECTED && 'Disconnected'}
+            </div>
+            {messages.map((msg) => {
+              const isOwn = user && (msg.senderId === user.sub || msg.senderId === user.id || msg.senderId === user.userId);
+              return (
+              <div key={msg.id} className={`message ${isOwn ? 'own-message' : 'other-message'}`}>
                 <div className="message-header">
-                  <span className="sender-name">{msg.senderId === user.sub ? 'You' : msg.senderName}</span>
+                  <span className="sender-name">{isOwn ? 'You' : (msg.senderName || 'Member')}</span>
                   <span className="message-time">{formatTimestamp(msg.timestamp)}</span>
                 </div>
                 <div className="message-content">{msg.content}</div>
               </div>
-            ))}
+            )})}
             <div ref={messagesEndRef} />
           </div>
           <form className="message-form" onSubmit={handleSendMessage}>

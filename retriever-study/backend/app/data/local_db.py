@@ -432,6 +432,32 @@ class Database:
         
         return self.get_group_by_id(group_id)
 
+    def leave_group(self, group_id: str, user_id: str) -> Optional[Dict[str, Any]]:
+        """Removes a user from a group's member list.
+
+        Business rules:
+        - No-op if group doesn't exist.
+        - No-op if user is not a member.
+        - Owner can leave; ownership transfer is not handled here (future feature).
+        """
+        group = self.get_group_by_id(group_id)
+        if not group:
+            return None
+
+        if user_id not in group["members"]:
+            return group
+
+        group["members"] = [m for m in group["members"] if m != user_id]
+
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        members_json = json.dumps(group["members"])
+        cursor.execute("UPDATE groups SET members = ? WHERE groupId = ?", (members_json, group_id))
+        conn.commit()
+        conn.close()
+
+        return self.get_group_by_id(group_id)
+
     def update_group_embedding(self, group_id: str, embedding: List[float]):
         """Updates the embedding for a specific group."""
         conn = self._get_connection()

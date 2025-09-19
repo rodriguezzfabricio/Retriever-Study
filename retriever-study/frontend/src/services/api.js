@@ -104,8 +104,26 @@ export const createGroup = (groupData, ownerId) =>
     body: JSON.stringify(groupData),
   });
 
-export const getAllGroups = (offset = 0, limit = 50) =>
-  apiRequest(`/groups?offset=${offset}&limit=${limit}`);
+export const getAllGroups = async (offset = 0, limit = 50) => {
+  const url = `${API_BASE_URL}/groups?offset=${offset}&limit=${limit}`;
+  const headers = { 'Content-Type': 'application/json' };
+  const token = localStorage.getItem('authToken');
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const res = await fetch(url, { headers });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new ApiError(
+      errorData.detail?.error || `HTTP ${res.status}`,
+      res.status,
+      errorData
+    );
+  }
+  const items = await res.json();
+  const totalHeader = res.headers.get('X-Total-Count');
+  const total = totalHeader ? parseInt(totalHeader, 10) : null;
+  return { items, total };
+};
 
 export const getGroupsByCourse = (courseCode) =>
   apiRequest(`/groups?courseCode=${encodeURIComponent(courseCode)}`);
@@ -114,6 +132,11 @@ export const joinGroup = (groupId, userId) =>
   apiRequest(`/groups/${groupId}/join`, {
     method: 'POST',
     body: JSON.stringify({ userId }),
+  });
+
+export const leaveGroup = (groupId) =>
+  apiRequest(`/groups/${groupId}/leave`, {
+    method: 'POST',
   });
 
 // AI Features
