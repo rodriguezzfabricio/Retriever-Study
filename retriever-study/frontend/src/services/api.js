@@ -117,11 +117,11 @@ export const createGroup = (groupData, ownerId) =>
 export const getAllGroups = async (offset = 0, limit = 50) => {
   const url = `${API_BASE_URL}/groups?offset=${offset}&limit=${limit}`;
   const headers = { 'Content-Type': 'application/json' };
-  
+
   // Get the token from the stored auth data
   const authData = localStorage.getItem('authData');
   let token = null;
-  
+
   if (authData) {
     try {
       const parsedAuthData = JSON.parse(authData);
@@ -130,7 +130,7 @@ export const getAllGroups = async (offset = 0, limit = 50) => {
       console.error('Failed to parse auth data from localStorage:', error);
     }
   }
-  
+
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
   const res = await fetch(url, { headers });

@@ -50,6 +50,7 @@ class Group:
     startsSoon: bool = False
 
 
+
 @dataclass
 class Message:
     messageId: str

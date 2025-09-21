@@ -48,16 +48,16 @@ const GroupCard = ({ group, onJoin, isJoined = false }) => {
           )}
         </div>
         <p className="group-description">{group.description}</p>
+        <div className="group-meta">
+          <span className="group-subject" aria-label="Course code">{group.subject}</span>
+          <span className="group-members" aria-label="Capacity">{capacity ? `${memberCount}/${capacity}` : memberCount} members</span>
+        </div>
         <div className="group-meta" style={{ flexWrap: 'wrap', gap: 6 }}>
           {group.department && <span className="group-department">🏫 {group.department}</span>}
           {group.difficulty && <span className="group-difficulty">🎯 {group.difficulty}</span>}
           {group.meetingType && <span className="group-meeting">🤝 {group.meetingType}</span>}
           {group.timeSlot && <span className="group-timeslot">🕒 {group.timeSlot}</span>}
           {group.groupSize && <span className="group-size">👥 {group.groupSize}</span>}
-        </div>
-        <div className="group-meta">
-          <span className="group-subject" aria-label="Course code">{group.subject}</span>
-          <span className="group-members" aria-label="Capacity">{capacity ? `${memberCount}/${capacity}` : memberCount} members</span>
         </div>
         <div className="group-meta" style={{ marginTop: 6, fontSize: 12, color: '#666' }}>
           {group.location && <span aria-label="Location">📍 {group.location}</span>}
