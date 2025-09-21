@@ -11,6 +11,9 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from google.oauth2 import id_token as google_id_token
 from google.auth.transport import requests as google_requests
+import structlog
+
+logger = structlog.get_logger()
 
 
 def _load_environment() -> None:
@@ -26,7 +29,9 @@ _load_environment()
 
 # ========== CONFIGURATION ==========
 # These MUST be environment variables in production for security
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev-secret-change-in-production")
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+if not SECRET_KEY:
+    raise ValueError("JWT_SECRET_KEY environment variable must be set")
 ALGORITHM = "HS256"  # Industry standard for JWT signing
 ACCESS_TOKEN_EXPIRE_MINUTES = 30  # Short-lived for security
 REFRESH_TOKEN_EXPIRE_DAYS = 7     # Longer for user convenience
@@ -34,7 +39,9 @@ REFRESH_TOKEN_EXPIRE_DAYS = 7     # Longer for user convenience
 # Google OAuth credentials - get these from Google Cloud Console
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET") 
-GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:3000/auth/callback")
+GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
+if not GOOGLE_REDIRECT_URI:
+    raise ValueError("GOOGLE_REDIRECT_URI environment variable must be set")
 
 # Google API endpoints - these are standard OAuth 2.0 URLs
 GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
@@ -122,12 +129,17 @@ def verify_token(token: str) -> Dict[str, Any]:
         payload = jwt.decode(
             token, 
             SECRET_KEY, 
-            algorithms=[ALGORITHM]  # Explicitly specify allowed algorithms
+            algorithms=[ALGORITHM],
+            options={
+                "require": ["exp", "iat", "sub"],  # Required claims
+                "verify_aud": False,  # Not using audience
+                "verify_iss": False   # Not using issuer
+            }
         )
         return payload
     except JWTError as e:
         # Log the actual error for debugging, but don't expose to client
-        print(f"JWT verification failed: {e}")
+        logger.error(f"JWT verification failed: {e}")
         raise AuthError("Invalid or expired token")
 
 # ========== GOOGLE OAUTH FUNCTIONS ==========

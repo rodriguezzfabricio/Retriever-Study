@@ -375,7 +375,7 @@ class TokenResponse(BaseModel):
 
 class GoogleCallbackRequest(BaseModel):
     """Payload for backend Google OAuth callback exchange."""
-    google_token: str = Field(
+    id_token: str = Field(
         ...,
         description="Google-issued ID token returned to the SPA",
         min_length=10,
@@ -538,10 +538,10 @@ async def google_oauth_callback(request: Request, payload: GoogleCallbackRequest
             "Google OAuth callback",
             endpoint="/auth/google/callback",
             client_ip=getattr(request.client, "host", "unknown"),
-            has_token=bool(payload.google_token),
+            has_token=bool(payload.id_token),
         )
 
-        google_user = await verify_google_id_token(payload.google_token)
+        google_user = await verify_google_id_token(payload.id_token)
         email = google_user.get("email")
 
         if not validate_umbc_email(email):
@@ -601,86 +601,6 @@ async def google_oauth_callback(request: Request, payload: GoogleCallbackRequest
         logger.error("Google OAuth callback failed", error=str(e))
         raise HTTPException(status_code=500, detail="Failed to authenticate with Google.")
 
-
-@limiter.limit("10/minute")
-@app.post("/auth/google_login", response_model=TokenResponse)
-async def google_login(request: Request, login_request: GoogleLoginRequest):
-    """Exchange a Google ID token for our application's JWT pair."""
-
-    try:
-        logger.info(
-            "Google login attempt",
-            endpoint="/auth/google_login",
-            client_ip=getattr(request.client, "host", "unknown"),
-            has_token=bool(login_request.id_token),
-        )
-
-        google_user = await verify_google_id_token(login_request.id_token)
-        email = google_user.get("email")
-
-        if not validate_umbc_email(email):
-            raise HTTPException(status_code=403, detail="A valid UMBC email address is required.")
-
-        google_id = google_user.get("sub")
-        if not google_id:
-            raise HTTPException(status_code=400, detail="Google token missing required subject claim.")
-
-        display_name = google_user.get("name") or (email.split("@", 1)[0] if email else "Unknown User")
-        sanitized_name = sanitize_string(display_name, max_length=100)
-        picture_url = google_user.get("picture")
-
-        if async_initialized and user_repo and hasattr(user_repo, "create_user"):
-            user_record = await user_repo.create_user({
-                "google_id": google_id,
-                "name": sanitized_name,
-                "email": email,
-                "picture_url": picture_url,
-            })
-        else:
-            user_record = db.create_or_update_oauth_user(
-                google_id=google_id,
-                name=sanitized_name,
-                email=email,
-                picture_url=picture_url,
-            )
-
-        db.update_last_login(user_record["userId"])
-
-        # Align with minimal JWT payload used by callback endpoint
-        token_payload = {
-            "sub": user_record["userId"],
-            "email": email,
-        }
-
-        access_token = create_access_token(token_payload)
-        refresh_token = create_refresh_token(token_payload)
-
-        user_profile = {
-            "id": user_record["userId"],
-            "name": user_record["name"],
-            "email": user_record["email"],
-            "picture": user_record.get("picture_url"),
-            "courses": user_record.get("courses", []),
-            "bio": user_record.get("bio", ""),
-            "created_at": user_record.get("created_at"),
-        }
-
-        logger.info("Google login successful", user_id=user_record["userId"])
-
-        return TokenResponse(
-            access_token=access_token,
-            refresh_token=refresh_token,
-            expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-            user=user_profile,
-        )
-
-    except AuthError as e:
-        raise HTTPException(status_code=e.status_code, detail=e.message)
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error("Google login failed", error=str(e))
-        raise HTTPException(status_code=500, detail="Failed to authenticate with Google.")
 
 @limiter.limit("10/minute")
 @app.post("/auth/refresh", response_model=TokenResponse)
