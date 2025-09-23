@@ -17,18 +17,11 @@ consolidating logic from all previous test_api_*.py variants.
 """
 
 import pytest
-import pytest_asyncio
 import os
 import uuid
 from typing import Dict, Any, Optional
-from httpx import AsyncClient
-from unittest.mock import patch, AsyncMock, MagicMock
-
-# Configure for PostgreSQL testing
-os.environ["ENVIRONMENT"] = "test"
-os.environ["DATABASE_URL"] = "postgresql+asyncpg://postgres:postgres@localhost:5432/test_retriever_study"
-os.environ["JWT_SECRET"] = "test-secret-key"
-os.environ["GOOGLE_CLIENT_ID"] = "test-google-client-id"
+from fastapi.testclient import TestClient
+from unittest.mock import patch, MagicMock
 
 from app.main import app
 from app.core.auth import create_access_token
@@ -58,36 +51,12 @@ def auth_headers(auth_token):
     """Authorization headers for API requests."""
     return {"Authorization": f"Bearer {auth_token}"}
 
-@pytest.fixture(autouse=True)
-def mock_external_services():
-    """Mock external services to isolate API testing."""
-    ai_mock = AsyncMock()
-    ai_mock.generate_embedding_async.return_value = [0.1] * 128
-    ai_mock.health_check.return_value = {"status": "healthy"}
-
-    google_mock = AsyncMock()
-    google_mock.return_value = {
-        "sub": "google-123",
-        "email": "testuser@umbc.edu",
-        "name": "Test User",
-        "picture": "https://example.com/pic.png"
-    }
-
-    with patch("app.data.async_db.get_db") as mock_get_db, \
-         patch("app.main.ai_service", ai_mock), \
-         patch("app.core.auth.verify_google_id_token", google_mock), \
-         patch("app.core.toxicity.get_toxicity_score", return_value=0.1), \
-         patch("app.main.async_initialized", True):
-        mock_get_db.return_value = AsyncMock()
-        yield
-
-@pytest.mark.asyncio
 class TestHealthAndSystemEndpoints:
     """Test system health and monitoring endpoints."""
 
-    async def test_health_endpoint_via_api(self, client: AsyncClient):
+    def test_health_endpoint_via_api(self, client: TestClient):
         """✅ Test: API endpoint returns health status."""
-        response = await client.get("/health")
+        response = client.get("/health")
 
         assert response.status_code == 200
         data = response.json()
@@ -96,26 +65,12 @@ class TestHealthAndSystemEndpoints:
         assert "version" in data
         print("✅ Health endpoint accessible via API")
 
-@pytest.mark.asyncio
 class TestAuthenticationFlow:
     """Test OAuth authentication and user management endpoints."""
 
-    async def test_google_oauth_callback_flow(self, client: AsyncClient):
+    def test_google_oauth_callback_flow(self, client: TestClient):
         """Test Google OAuth callback with proper token exchange."""
-        with patch("app.main.get_repositories") as mock_repos, patch("app.main.verify_google_id_token") as mock_verify_google_id_token:
-            mock_user_repo = AsyncMock()
-            mock_user_repo.create_or_update_oauth_user.return_value = {
-                "userId": "test-user-001",
-                "name": "Test User",
-                "email": "testuser@umbc.edu",
-                "picture_url": "https://example.com/avatar.png",
-                "courses": [],
-                "bio": "",
-                "created_at": "2025-01-01T12:00:00Z"
-            }
-            mock_user_repo.update_last_login = AsyncMock()
-            mock_repos.return_value = {"user_repo": mock_user_repo}
-
+        with patch("app.main.verify_google_id_token") as mock_verify_google_id_token:
             mock_verify_google_id_token.return_value = {
                 "sub": "test-user-001",
                 "email": "testuser@umbc.edu",
@@ -126,7 +81,7 @@ class TestAuthenticationFlow:
             }
 
             oauth_payload = {"id_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMDAxIiwiZW1haWwiOiJ0ZXN0dXNlckB1bWJjLmVkdSIsImV4cCI6MTc1ODY0MzA1NCwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc1ODY0MTI1NCwiYXVkIjoidGVzdC1nb29nbGUtY2xpZW50LWlkIiwiaXNzIjoiYWNjb3VudHMuZ29vZ2xlLmNvbSJ9.some_signature"}
-            response = await client.post("/auth/google/callback", json=oauth_payload)
+            response = client.post("/auth/google/callback", json=oauth_payload)
 
             assert response.status_code == 200
             auth_response = response.json()
@@ -135,10 +90,10 @@ class TestAuthenticationFlow:
             assert "user" in auth_response
             print("✅ Google OAuth authentication flow works")
 
-    async def test_get_current_user_profile(self, client: AsyncClient, auth_headers):
+    def test_get_current_user_profile(self, client: TestClient, auth_headers):
         """Test retrieving current user profile."""
         with patch("app.main.get_repositories") as mock_repos:
-            mock_user_repo = AsyncMock()
+            mock_user_repo = MagicMock()
             mock_user_repo.get_user.return_value = {
                 "userId": "test-user-001",
                 "name": "Test User",
@@ -151,7 +106,7 @@ class TestAuthenticationFlow:
 
             mock_repos.return_value = {"user_repo": mock_user_repo}
 
-            response = await client.get("/auth/me", headers=auth_headers)
+            response = client.get("/auth/me", headers=auth_headers)
             assert response.status_code == 200
 
             profile = response.json()
@@ -159,10 +114,10 @@ class TestAuthenticationFlow:
             assert profile["email"] == "testuser@umbc.edu"
             print("✅ User profile retrieval works")
 
-    async def test_update_user_profile(self, client: AsyncClient, auth_headers):
+    def test_update_user_profile(self, client: TestClient, auth_headers):
         """Test updating user profile information."""
         with patch("app.main.get_repositories") as mock_repos:
-            mock_user_repo = AsyncMock()
+            mock_user_repo = MagicMock()
             mock_user_repo.get_user.return_value = {
                 "userId": "test-user-001",
                 "name": "Test User",
@@ -176,7 +131,7 @@ class TestAuthenticationFlow:
                 "picture_url": "https://example.com/avatar.png",
                 "created_at": "2025-01-01T12:00:00Z"
             }
-            mock_user_repo.update_user_embedding = AsyncMock()
+            mock_user_repo.update_user_embedding = MagicMock()
 
             mock_repos.return_value = {"user_repo": mock_user_repo}
 
@@ -192,34 +147,33 @@ class TestAuthenticationFlow:
                 }
             }
 
-            response = await client.put("/users/me", json=update_data, headers=auth_headers)
+            response = client.put("/users/me", json=update_data, headers=auth_headers)
             assert response.status_code == 200
             print("✅ User profile update works")
 
-    async def test_auth_required_via_api(self, client: AsyncClient):
+    def test_auth_required_via_api(self, client: TestClient):
         """✅ Test: Protected endpoints require authentication."""
-        response = await client.get("/auth/me")
+        response = client.get("/auth/me")
         assert response.status_code == 403
         print("✅ Authentication required for protected endpoints")
 
-    async def test_google_oauth_endpoint_structure(self, client: AsyncClient):
+    def test_google_oauth_endpoint_structure(self, client: TestClient):
         """✅ Test: OAuth endpoint has correct structure."""
-        response = await client.post("/auth/google/callback", json={"id_token": "test"})
+        response = client.post("/auth/google/callback", json={"id_token": "test"})
         assert response.status_code in [401, 422]
         print("✅ Google OAuth endpoint exists and processes requests")
 
-@pytest.mark.asyncio
 class TestGroupManagement:
     """Test complete group lifecycle through API endpoints."""
 
     created_group_id: Optional[str] = None
 
-    async def test_create_group_success(self, client: AsyncClient, auth_headers):
+    def test_create_group_success(self, client: TestClient, auth_headers):
         """Test creating a new study group via API."""
         with patch("app.main.get_repositories") as mock_repos:
             group_id = f"group-{uuid.uuid4().hex[:8]}"
 
-            mock_group_repo = AsyncMock()
+            mock_group_repo = MagicMock()
             mock_group_repo.create_group.return_value = {
                 "groupId": group_id,
                 "group_id": group_id,
@@ -245,7 +199,7 @@ class TestGroupManagement:
                 "fillingUpFast": False,
                 "startsSoon": True
             }
-            mock_group_repo.update_group_embedding = AsyncMock()
+            mock_group_repo.update_group_embedding = MagicMock()
 
             mock_repos.return_value = {"group_repo": mock_group_repo}
 
@@ -257,7 +211,7 @@ class TestGroupManagement:
                 "location": "Library"
             }
 
-            response = await client.post("/groups", json=group_data, headers=auth_headers)
+            response = client.post("/groups", json=group_data, headers=auth_headers)
             assert response.status_code == 201
 
             created_group = response.json()
@@ -268,12 +222,12 @@ class TestGroupManagement:
             TestGroupManagement.created_group_id = created_group["groupId"]
             print("✅ Group creation endpoint works")
 
-    async def test_get_group_details(self, client: AsyncClient):
+    def test_get_group_details(self, client: TestClient):
         """Test retrieving specific group details via API."""
         group_id = TestGroupManagement.created_group_id or "test-group-001"
 
         with patch("app.main.get_repositories") as mock_repos:
-            mock_group_repo = AsyncMock()
+            mock_group_repo = MagicMock()
             mock_group_repo.get_group.return_value = {
                 "groupId": group_id,
                 "group_id": group_id,
@@ -303,7 +257,7 @@ class TestGroupManagement:
 
             mock_repos.return_value = {"group_repo": mock_group_repo}
 
-            response = await client.get(f"/groups/{group_id}")
+            response = client.get(f"/groups/{group_id}")
             assert response.status_code == 200
 
             group_details = response.json()
@@ -311,10 +265,10 @@ class TestGroupManagement:
             assert group_details["title"] == "API Test Group"
             print("✅ Group details retrieval works")
 
-    async def test_get_all_groups(self, client: AsyncClient):
+    def test_get_all_groups(self, client: TestClient):
         """Test retrieving all groups via API."""
         with patch("app.main.get_repositories") as mock_repos:
-            mock_group_repo = AsyncMock()
+            mock_group_repo = MagicMock()
             mock_group_repo.get_all_groups.return_value = [
                 {
                     "groupId": "group-001",
@@ -346,7 +300,7 @@ class TestGroupManagement:
 
             mock_repos.return_value = {"group_repo": mock_group_repo}
 
-            response = await client.get("/groups")
+            response = client.get("/groups")
             assert response.status_code == 200
 
             groups = response.json()
@@ -354,12 +308,12 @@ class TestGroupManagement:
             assert len(groups) >= 1
             print("✅ Group listing works")
 
-    async def test_join_group_via_api(self, client: AsyncClient, auth_headers):
+    def test_join_group_via_api(self, client: TestClient, auth_headers):
         """Test joining a group via API endpoint."""
         group_id = TestGroupManagement.created_group_id or "test-group-001"
 
         with patch("app.main.get_repositories") as mock_repos:
-            mock_group_repo = AsyncMock()
+            mock_group_repo = MagicMock()
             mock_group_repo.add_member.return_value = {
                 "groupId": group_id,
                 "group_id": group_id,
@@ -389,17 +343,17 @@ class TestGroupManagement:
 
             mock_repos.return_value = {"group_repo": mock_group_repo}
 
-            response = await client.post(f"/groups/{group_id}/join", headers=auth_headers)
+            response = client.post(f"/groups/{group_id}/join", headers=auth_headers)
             assert response.status_code == 200
 
             updated_group = response.json()
             assert "test-user-001" in updated_group["members"]
             print("✅ Group joining works")
 
-    async def test_get_user_groups(self, client: AsyncClient, auth_headers):
+    def test_get_user_groups(self, client: TestClient, auth_headers):
         """Test getting groups for a specific user."""
         with patch("app.main.get_repositories") as mock_repos:
-            mock_group_repo = AsyncMock()
+            mock_group_repo = MagicMock()
             mock_group_repo.get_groups_for_member.return_value = [
                 {
                     "groupId": "group-001",
@@ -431,21 +385,20 @@ class TestGroupManagement:
 
             mock_repos.return_value = {"group_repo": mock_group_repo}
 
-            response = await client.get("/users/test-user-001/groups", headers=auth_headers)
+            response = client.get("/users/test-user-001/groups", headers=auth_headers)
             assert response.status_code == 200
 
             user_groups = response.json()
             assert isinstance(user_groups, list)
             print("✅ User groups retrieval works")
 
-@pytest.mark.asyncio
 class TestMessagingSystem:
     """Test group messaging functionality via API."""
 
-    async def test_create_message_via_api(self, client: AsyncClient):
+    def test_create_message_via_api(self, client: TestClient):
         """Test creating a message through the API."""
         with patch("app.main.get_repositories") as mock_repos:
-            mock_message_repo = AsyncMock()
+            mock_message_repo = MagicMock()
             mock_message_repo.create_message.return_value = {
                 "messageId": "msg-001",
                 "groupId": "group-001",
@@ -463,18 +416,18 @@ class TestMessagingSystem:
                 "content": "Hello from API test!"
             }
 
-            response = await client.post("/messages", json=message_data)
+            response = client.post("/messages", json=message_data)
             assert response.status_code == 201
 
             created_message = response.json()
             assert created_message["content"] == "Hello from API test!"
-            assert "messageId" in created_message
+            assert "id" in created_message
             print("✅ Message creation works")
 
-    async def test_get_messages_via_api(self, client: AsyncClient):
+    def test_get_messages_via_api(self, client: TestClient):
         """Test retrieving messages for a group via API."""
         with patch("app.main.get_repositories") as mock_repos:
-            mock_message_repo = AsyncMock()
+            mock_message_repo = MagicMock()
             mock_message_repo.get_messages.return_value = [
                 {
                     "messageId": "msg-001",
@@ -485,7 +438,7 @@ class TestMessagingSystem:
                     "toxicityScore": 0.1
                 }
             ]
-            mock_user_repo = AsyncMock()
+            mock_user_repo = MagicMock()
             mock_user_repo.get_user.return_value = {"name": "Test User"}
 
             mock_repos.return_value = {
@@ -493,18 +446,18 @@ class TestMessagingSystem:
                 "user_repo": mock_user_repo
             }
 
-            response = await client.get("/messages?groupId=group-001")
+            response = client.get("/messages?groupId=group-001")
             assert response.status_code == 200
 
             messages = response.json()
             assert isinstance(messages, list)
             print("✅ Message retrieval works")
 
-    async def test_toxic_message_blocked(self, client: AsyncClient):
+    def test_toxic_message_blocked(self, client: TestClient):
         """Test that toxic messages are blocked by the API."""
         with patch("app.core.toxicity.get_toxicity_score", return_value=0.9):
             with patch("app.main.get_repositories") as mock_repos:
-                mock_repos.return_value = {"message_repo": AsyncMock()}
+                mock_repos.return_value = {"message_repo": MagicMock()}
 
                 message_data = {
                     "groupId": "group-001",
@@ -512,18 +465,17 @@ class TestMessagingSystem:
                     "content": "This is a toxic message for testing"
                 }
 
-                response = await client.post("/messages", json=message_data)
+                response = client.post("/messages", json=message_data)
                 assert response.status_code == 400
                 print("✅ Toxic content filtering works")
 
-@pytest.mark.asyncio
 class TestSearchAndRecommendations:
     """Test AI-powered search and recommendation features."""
 
-    async def test_search_groups_via_api(self, client: AsyncClient):
+    def test_search_groups_via_api(self, client: TestClient):
         """Test searching groups through the API."""
         with patch("app.main.get_repositories") as mock_repos:
-            mock_group_repo = AsyncMock()
+            mock_group_repo = MagicMock()
             mock_group_repo.get_all_groups.return_value = [
                 {
                     "groupId": "group-001",
@@ -556,32 +508,32 @@ class TestSearchAndRecommendations:
 
             mock_repos.return_value = {"group_repo": mock_group_repo}
 
-            response = await client.get("/search?q=data structures&limit=5")
+            response = client.get("/search?q=data structures&limit=5")
             assert response.status_code == 200
 
             search_results = response.json()
             assert isinstance(search_results, list)
             print("✅ Search functionality works")
 
-    async def test_search_validation_via_api(self, client: AsyncClient):
+    def test_search_validation_via_api(self, client: TestClient):
         """✅ Test: API validates search input properly."""
-        response = await client.get("/search?q=")
+        response = client.get("/search?q=")
         assert response.status_code == 400
         print("✅ Search validation working via API")
 
-    async def test_get_recommendations_via_api(self, client: AsyncClient, auth_headers):
+    def test_get_recommendations_via_api(self, client: TestClient, auth_headers):
         """Test getting AI-powered recommendations via API."""
         with patch("app.main.get_repositories") as mock_repos:
-            mock_user_repo = AsyncMock()
+            mock_user_repo = MagicMock()
             mock_user_repo.get_user.return_value = {
                 "userId": "test-user-001",
                 "bio": "I love algorithms",
                 "courses": ["CMSC341"],
                 "embedding": [0.1, 0.2, 0.3] * 42
             }
-            mock_user_repo.update_user_embedding = AsyncMock()
+            mock_user_repo.update_user_embedding = MagicMock()
 
-            mock_group_repo = AsyncMock()
+            mock_group_repo = MagicMock()
             mock_group_repo.get_all_groups.return_value = []
 
             mock_repos.return_value = {
@@ -589,43 +541,41 @@ class TestSearchAndRecommendations:
                 "group_repo": mock_group_repo
             }
 
-            response = await client.get("/recommendations?limit=3", headers=auth_headers)
+            response = client.get("/recommendations?limit=3", headers=auth_headers)
             assert response.status_code == 200
 
             recommendations = response.json()
             assert isinstance(recommendations, list)
             print("✅ Recommendations work")
 
-@pytest.mark.asyncio
 class TestErrorHandling:
     """Test API error handling and edge cases."""
 
-    async def test_unauthorized_access_to_protected_endpoint(self, client: AsyncClient):
+    def test_unauthorized_access_to_protected_endpoint(self, client: TestClient):
         """Test that protected endpoints require authentication."""
-        response = await client.get("/auth/me")
+        response = client.get("/auth/me")
         assert response.status_code == 403
         print("✅ Authentication enforcement works")
 
-    async def test_nonexistent_group_returns_404(self, client: AsyncClient):
+    def test_nonexistent_group_returns_404(self, client: TestClient):
         """Test that requesting a nonexistent group returns 404."""
         with patch("app.main.get_repositories") as mock_repos:
-            mock_group_repo = AsyncMock()
+            mock_group_repo = MagicMock()
             mock_group_repo.get_group.return_value = None
 
             mock_repos.return_value = {"group_repo": mock_group_repo}
 
-            response = await client.get("/groups/nonexistent-group-id")
+            response = client.get("/groups/nonexistent-group-id")
             assert response.status_code == 404
             print("✅ Error handling for missing resources works")
 
-@pytest.mark.asyncio
 class TestDataIntegrity:
     """Test data integrity validation through API operations."""
 
-    async def test_member_count_consistency(self, client: AsyncClient, auth_headers):
+    def test_member_count_consistency(self, client: TestClient, auth_headers):
         """✅ Test: Member count stays consistent with members list."""
         with patch("app.main.get_repositories") as mock_repos:
-            mock_group_repo = AsyncMock()
+            mock_group_repo = MagicMock()
 
             mock_group_repo.create_group.return_value = {
                 "groupId": "integrity-test-group",
@@ -652,12 +602,12 @@ class TestDataIntegrity:
                 "fillingUpFast": False,
                 "startsSoon": True
             }
-            mock_group_repo.update_group_embedding = AsyncMock()
+            mock_group_repo.update_group_embedding = MagicMock()
 
             mock_repos.return_value = {
-                "user_repo": AsyncMock(),
+                "user_repo": MagicMock(),
                 "group_repo": mock_group_repo,
-                "message_repo": AsyncMock()
+                "message_repo": MagicMock()
             }
 
             group_data = {
@@ -668,7 +618,7 @@ class TestDataIntegrity:
                 "location": "Test Room"
             }
 
-            response = await client.post("/groups", json=group_data, headers=auth_headers)
+            response = client.post("/groups", json=group_data, headers=auth_headers)
             assert response.status_code == 201
 
             created_group = response.json()
