@@ -1,10 +1,7 @@
-from typing import Optional, Any, Dict, List, AsyncGenerator
+from typing import Optional, Any, Dict, List, Generator
 from fastapi import Depends
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, AsyncEngine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session, declarative_base
-from sqlalchemy import Column, Integer, String, JSON, DateTime, func, ForeignKey, Table, select, delete
-from sqlalchemy.orm import relationship, sessionmaker
+from sqlalchemy import create_engine, Column, Integer, String, JSON, DateTime, func, ForeignKey, Table, select, delete
+from sqlalchemy.orm import sessionmaker, Session, declarative_base, relationship
 import os
 from datetime import datetime
 
@@ -46,6 +43,13 @@ class Group(Base):
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    expires_at = Column(DateTime, nullable=True)
+    department = Column(String, nullable=True)
+    difficulty = Column(String, nullable=True)
+    meeting_type = Column(String, nullable=True)
+    time_slot = Column(String, nullable=True)
+    study_style = Column(JSON, nullable=True)
+    group_size = Column(String, nullable=True)
     
     # Relationships
     owner = relationship("User", back_populates="owned_groups")
@@ -78,57 +82,39 @@ class Message(Base):
     sender = relationship("User", back_populates="messages")
 
 # Database URL from environment or default
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:postgres@localhost:5432/retriever_study")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/retriever_study")
 
-# Create async engine
-engine: AsyncEngine = create_async_engine(
-    DATABASE_URL,
-    echo=True,
-    future=True
-)
+# Create sync engine
+engine = create_engine(DATABASE_URL, echo=True)
 
-# Create async session factory
-AsyncSessionLocal = sessionmaker(
-    bind=engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-    autoflush=False
-)
+# Create sync session factory
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Repository instances with actual database operations
 class UserRepository:
     """User repository for database operations."""
     
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: Session):
         self.db = db
     
-    async def get_user(self, user_id: int) -> Optional[User]:
-        result = await self.db.execute(
-            select(User).filter(User.id == user_id)
-        )
-        return result.scalars().first()
+    def get_user(self, user_id: int) -> Optional[User]:
+        return self.db.query(User).filter(User.id == user_id).first()
     
-    async def get_user_by_email(self, email: str) -> Optional[User]:
-        result = await self.db.execute(
-            select(User).filter(User.email == email)
-        )
-        return result.scalars().first()
+    def get_user_by_email(self, email: str) -> Optional[User]:
+        return self.db.query(User).filter(User.email == email).first()
 
-    async def get_user_by_google_id(self, google_id: str) -> Optional[User]:
-        result = await self.db.execute(
-            select(User).filter(User.google_id == google_id)
-        )
-        return result.scalars().first()
+    def get_user_by_google_id(self, google_id: str) -> Optional[User]:
+        return self.db.query(User).filter(User.google_id == google_id).first()
 
-    async def create_user(self, user_data: Dict[str, Any]) -> User:
+    def create_user(self, user_data: Dict[str, Any]) -> User:
         db_user = User(**user_data)
         self.db.add(db_user)
-        await self.db.commit()
-        await self.db.refresh(db_user)
+        self.db.commit()
+        self.db.refresh(db_user)
         return db_user
     
-    async def update_user(self, user_id: int, user_data: Dict[str, Any]) -> Optional[User]:
-        user = await self.get_user(user_id)
+    def update_user(self, user_id: int, user_data: Dict[str, Any]) -> Optional[User]:
+        user = self.get_user(user_id)
         if not user:
             return None
             
@@ -136,12 +122,12 @@ class UserRepository:
             setattr(user, key, value)
             
         user.updated_at = datetime.utcnow()
-        await self.db.commit()
-        await self.db.refresh(user)
+        self.db.commit()
+        self.db.refresh(user)
         return user
 
-    async def create_or_update_oauth_user(self, google_id: str, name: str, email: str, picture_url: str) -> User:
-        user = await self.get_user_by_google_id(google_id)
+    def create_or_update_oauth_user(self, google_id: str, name: str, email: str, picture_url: str) -> User:
+        user = self.get_user_by_google_id(google_id)
         if user:
             user.name = name
             user.email = email
@@ -155,141 +141,112 @@ class UserRepository:
                 picture_url=picture_url,
                 hashed_password="", # Not used for OAuth
             )
-            self.db.add(user)
-        await self.db.commit()
-        await self.db.refresh(user)
+        self.db.add(user)
+        self.db.commit()
+        self.db.refresh(user)
         return user
 
-    async def update_last_login(self, user_id: int) -> None:
-        user = await self.get_user(user_id)
+    def update_last_login(self, user_id: int) -> None:
+        user = self.get_user(user_id)
         if user:
             user.last_login = datetime.utcnow()
-            await self.db.commit()
+            self.db.commit()
 
 class GroupRepository:
     """Group repository for database operations."""
     
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: Session):
         self.db = db
     
-    async def get_group(self, group_id: int) -> Optional[Group]:
-        result = await self.db.execute(
-            select(Group).filter(Group.id == group_id)
-        )
-        return result.scalars().first()
+    def get_group(self, group_id: int) -> Optional[Group]:
+        return self.db.query(Group).filter(Group.id == group_id).first()
     
-    async def create_group(self, group_data: Dict[str, Any], owner_id: int) -> Group:
+    def create_group(self, group_data: Dict[str, Any], owner_id: int) -> Group:
         db_group = Group(**group_data, owner_id=owner_id)
         self.db.add(db_group)
-        await self.db.commit()
-        await self.db.refresh(db_group)
+        self.db.commit()
+        self.db.refresh(db_group)
         return db_group
     
-    async def add_member(self, group_id: int, user_id: int) -> bool:
+    def add_member(self, group_id: int, user_id: int) -> Optional[Group]:
         # Check if user is already a member
-        result = await self.db.execute(
-            select(GroupMember).filter(
-                GroupMember.group_id == group_id,
-                GroupMember.user_id == user_id
-            )
-        )
-        if result.scalars().first():
-            return False  # Already a member
+        member = self.db.query(GroupMember).filter(GroupMember.group_id == group_id, GroupMember.user_id == user_id).first()
+        if member:
+            return self.get_group(group_id)  # Already a member, return the group
             
         # Add as member
         member = GroupMember(group_id=group_id, user_id=user_id)
         self.db.add(member)
-        await self.db.commit()
-        return True
+        self.db.commit()
+        return self.get_group(group_id)
     
-    async def remove_member(self, group_id: int, user_id: int) -> bool:
-        result = await self.db.execute(
+    def remove_member(self, group_id: int, user_id: int) -> bool:
+        result = self.db.execute(
             delete(GroupMember).where(
                 GroupMember.group_id == group_id,
                 GroupMember.user_id == user_id
             )
         )
-        await self.db.commit()
+        self.db.commit()
         return result.rowcount > 0
 
-    async def get_all_groups(self, limit: int = 20, offset: int = 0) -> List[Group]:
-        result = await self.db.execute(
-            select(Group).offset(offset).limit(limit)
-        )
-        return result.scalars().all()
+    def get_all_groups(self, limit: int = 20, offset: int = 0) -> List[Group]:
+        return self.db.query(Group).offset(offset).limit(limit).all()
 
-    async def get_groups_for_member(self, user_id: int) -> List[Group]:
-        result = await self.db.execute(
-            select(Group).join(GroupMember).filter(GroupMember.user_id == user_id)
-        )
-        return result.scalars().all()
+    def get_groups_for_member(self, user_id: int) -> List[Group]:
+        return self.db.query(Group).join(GroupMember).filter(GroupMember.user_id == user_id).all()
 
 class MessageRepository:
     """Message repository for database operations."""
     
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: Session):
         self.db = db
     
-    async def get_messages(self, group_id: int, limit: int = 100) -> List[Message]:
-        result = await self.db.execute(
-            select(Message)
-            .filter(Message.group_id == group_id)
-            .order_by(Message.created_at.desc())
-            .limit(limit)
-        )
-        return result.scalars().all()
+    def get_messages(self, group_id: int, limit: int = 100) -> List[Message]:
+        return self.db.query(Message).filter(Message.group_id == group_id).order_by(Message.created_at.desc()).limit(limit).all()
     
-    async def create_message(self, content: str, group_id: int, sender_id: int) -> Message:
+    def create_message(self, content: str, group_id: int, sender_id: int) -> Message:
         message = Message(
             content=content,
             group_id=group_id,
             sender_id=sender_id
         )
         self.db.add(message)
-        await self.db.commit()
-        await self.db.refresh(message)
+        self.db.commit()
+        self.db.refresh(message)
         return message
 
-async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    """Dependency for getting async database session."""
-    async with AsyncSessionLocal() as session:
-        try:
-            yield session
-        except Exception as e:
-            await session.rollback()
-            raise e
-        finally:
-            await session.close()
+def get_db() -> Generator[Session, None, None]:
+    """Dependency for getting database session."""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 # Dependency to get repositories
-def get_repositories(db: AsyncSession = Depends(get_db)) -> Dict[str, Any]:
+def get_repositories(db: Session = Depends(get_db)) -> Dict[str, Any]:
     return {
         "user_repo": UserRepository(db),
         "group_repo": GroupRepository(db),
         "message_repo": MessageRepository(db)
     }
 
-async def initialize_async_database(database_url: str = None) -> None:
-    """Initialize the async database connection and create tables."""
-    global engine, AsyncSessionLocal
+def initialize_database(database_url: str = None) -> None:
+    """Initialize the database connection and create tables."""
+    global engine, SessionLocal
     
     if database_url:
-        engine = create_async_engine(database_url, echo=True, future=True)
+        engine = create_engine(database_url, echo=True)
     
     # Create all tables
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    Base.metadata.create_all(bind=engine)
         
-    AsyncSessionLocal = sessionmaker(
-        bind=engine,
-        class_=AsyncSession,
-        expire_on_commit=False,
-        autoflush=False
-    )
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-async def close_async_database() -> None:
+def close_database() -> None:
     """Close the database connection."""
-    await engine.dispose()
+    engine.dispose()
 
 # For backward compatibility
-async_db = engine
+db = engine
