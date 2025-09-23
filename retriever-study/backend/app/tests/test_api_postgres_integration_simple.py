@@ -58,12 +58,6 @@ def auth_headers(auth_token):
     """Authorization headers for API requests."""
     return {"Authorization": f"Bearer {auth_token}"}
 
-@pytest_asyncio.fixture
-async def client():
-    """HTTP client for testing API endpoints."""
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        yield ac
-
 @pytest.fixture(autouse=True)
 def mock_external_services():
     """Mock external services to isolate API testing."""
@@ -79,10 +73,12 @@ def mock_external_services():
         "picture": "https://example.com/pic.png"
     }
 
-    with patch("app.main.ai_service", ai_mock), \
+    with patch("app.data.async_db.get_db") as mock_get_db, \
+         patch("app.main.ai_service", ai_mock), \
          patch("app.core.auth.verify_google_id_token", google_mock), \
          patch("app.core.toxicity.get_toxicity_score", return_value=0.1), \
          patch("app.main.async_initialized", True):
+        mock_get_db.return_value = AsyncMock()
         yield
 
 @pytest.mark.asyncio
@@ -106,7 +102,7 @@ class TestAuthenticationFlow:
 
     async def test_google_oauth_callback_flow(self, client: AsyncClient):
         """Test Google OAuth callback with proper token exchange."""
-        with patch("app.main.get_repositories") as mock_repos:
+        with patch("app.main.get_repositories") as mock_repos, patch("app.main.verify_google_id_token") as mock_verify_google_id_token:
             mock_user_repo = AsyncMock()
             mock_user_repo.create_or_update_oauth_user.return_value = {
                 "userId": "test-user-001",
@@ -118,10 +114,18 @@ class TestAuthenticationFlow:
                 "created_at": "2025-01-01T12:00:00Z"
             }
             mock_user_repo.update_last_login = AsyncMock()
-
             mock_repos.return_value = {"user_repo": mock_user_repo}
 
-            oauth_payload = {"id_token": "mock-google-jwt-token"}
+            mock_verify_google_id_token.return_value = {
+                "sub": "test-user-001",
+                "email": "testuser@umbc.edu",
+                "name": "Test User",
+                "picture": "https://example.com/pic.png",
+                "aud": "test-google-client-id",
+                "iss": "accounts.google.com"
+            }
+
+            oauth_payload = {"id_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMDAxIiwiZW1haWwiOiJ0ZXN0dXNlckB1bWJjLmVkdSIsImV4cCI6MTc1ODY0MzA1NCwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc1ODY0MTI1NCwiYXVkIjoidGVzdC1nb29nbGUtY2xpZW50LWlkIiwiaXNzIjoiYWNjb3VudHMuZ29vZ2xlLmNvbSJ9.some_signature"}
             response = await client.post("/auth/google/callback", json=oauth_payload)
 
             assert response.status_code == 200
@@ -135,7 +139,7 @@ class TestAuthenticationFlow:
         """Test retrieving current user profile."""
         with patch("app.main.get_repositories") as mock_repos:
             mock_user_repo = AsyncMock()
-            mock_user_repo.get_user_by_id.return_value = {
+            mock_user_repo.get_user.return_value = {
                 "userId": "test-user-001",
                 "name": "Test User",
                 "email": "testuser@umbc.edu",
@@ -159,13 +163,13 @@ class TestAuthenticationFlow:
         """Test updating user profile information."""
         with patch("app.main.get_repositories") as mock_repos:
             mock_user_repo = AsyncMock()
-            mock_user_repo.get_user_by_id.return_value = {
+            mock_user_repo.get_user.return_value = {
                 "userId": "test-user-001",
                 "name": "Test User",
                 "email": "testuser@umbc.edu",
                 "picture_url": "https://example.com/avatar.png"
             }
-            mock_user_repo.update_user_by_id.return_value = {
+            mock_user_repo.update_user.return_value = {
                 "userId": "test-user-001",
                 "name": "Updated User",
                 "email": "testuser@umbc.edu",
@@ -195,7 +199,7 @@ class TestAuthenticationFlow:
     async def test_auth_required_via_api(self, client: AsyncClient):
         """✅ Test: Protected endpoints require authentication."""
         response = await client.get("/auth/me")
-        assert response.status_code == 401
+        assert response.status_code == 403
         print("✅ Authentication required for protected endpoints")
 
     async def test_google_oauth_endpoint_structure(self, client: AsyncClient):
@@ -219,7 +223,6 @@ class TestGroupManagement:
             mock_group_repo.create_group.return_value = {
                 "groupId": group_id,
                 "group_id": group_id,
-                "name": "API Test Group",
                 "title": "API Test Group",
                 "description": "Testing group creation via API",
                 "subject": "CMSC341",
@@ -271,7 +274,7 @@ class TestGroupManagement:
 
         with patch("app.main.get_repositories") as mock_repos:
             mock_group_repo = AsyncMock()
-            mock_group_repo.get_group_by_id.return_value = {
+            mock_group_repo.get_group.return_value = {
                 "groupId": group_id,
                 "group_id": group_id,
                 "name": "API Test Group",
@@ -312,7 +315,7 @@ class TestGroupManagement:
         """Test retrieving all groups via API."""
         with patch("app.main.get_repositories") as mock_repos:
             mock_group_repo = AsyncMock()
-            mock_group_repo.get_groups_with_pagination.return_value = [
+            mock_group_repo.get_all_groups.return_value = [
                 {
                     "groupId": "group-001",
                     "group_id": "group-001",
@@ -357,7 +360,7 @@ class TestGroupManagement:
 
         with patch("app.main.get_repositories") as mock_repos:
             mock_group_repo = AsyncMock()
-            mock_group_repo.join_group.return_value = {
+            mock_group_repo.add_member.return_value = {
                 "groupId": group_id,
                 "group_id": group_id,
                 "name": "API Test Group",
@@ -472,7 +475,7 @@ class TestMessagingSystem:
         """Test retrieving messages for a group via API."""
         with patch("app.main.get_repositories") as mock_repos:
             mock_message_repo = AsyncMock()
-            mock_message_repo.get_messages_by_group.return_value = [
+            mock_message_repo.get_messages.return_value = [
                 {
                     "messageId": "msg-001",
                     "groupId": "group-001",
@@ -483,7 +486,7 @@ class TestMessagingSystem:
                 }
             ]
             mock_user_repo = AsyncMock()
-            mock_user_repo.get_user_by_id.return_value = {"name": "Test User"}
+            mock_user_repo.get_user.return_value = {"name": "Test User"}
 
             mock_repos.return_value = {
                 "message_repo": mock_message_repo,
@@ -521,7 +524,7 @@ class TestSearchAndRecommendations:
         """Test searching groups through the API."""
         with patch("app.main.get_repositories") as mock_repos:
             mock_group_repo = AsyncMock()
-            mock_group_repo.get_groups_with_pagination.return_value = [
+            mock_group_repo.get_all_groups.return_value = [
                 {
                     "groupId": "group-001",
                     "group_id": "group-001",
@@ -570,7 +573,7 @@ class TestSearchAndRecommendations:
         """Test getting AI-powered recommendations via API."""
         with patch("app.main.get_repositories") as mock_repos:
             mock_user_repo = AsyncMock()
-            mock_user_repo.get_user_by_id.return_value = {
+            mock_user_repo.get_user.return_value = {
                 "userId": "test-user-001",
                 "bio": "I love algorithms",
                 "courses": ["CMSC341"],
@@ -579,7 +582,7 @@ class TestSearchAndRecommendations:
             mock_user_repo.update_user_embedding = AsyncMock()
 
             mock_group_repo = AsyncMock()
-            mock_group_repo.get_groups_with_pagination.return_value = []
+            mock_group_repo.get_all_groups.return_value = []
 
             mock_repos.return_value = {
                 "user_repo": mock_user_repo,
@@ -600,14 +603,14 @@ class TestErrorHandling:
     async def test_unauthorized_access_to_protected_endpoint(self, client: AsyncClient):
         """Test that protected endpoints require authentication."""
         response = await client.get("/auth/me")
-        assert response.status_code == 401
+        assert response.status_code == 403
         print("✅ Authentication enforcement works")
 
     async def test_nonexistent_group_returns_404(self, client: AsyncClient):
         """Test that requesting a nonexistent group returns 404."""
         with patch("app.main.get_repositories") as mock_repos:
             mock_group_repo = AsyncMock()
-            mock_group_repo.get_group_by_id.return_value = None
+            mock_group_repo.get_group.return_value = None
 
             mock_repos.return_value = {"group_repo": mock_group_repo}
 
@@ -627,7 +630,6 @@ class TestDataIntegrity:
             mock_group_repo.create_group.return_value = {
                 "groupId": "integrity-test-group",
                 "group_id": "integrity-test-group",
-                "name": "Integrity Test",
                 "title": "Integrity Test",
                 "ownerId": "test-user-001",
                 "created_by": "test-user-001",

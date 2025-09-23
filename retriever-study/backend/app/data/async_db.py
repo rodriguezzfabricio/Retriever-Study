@@ -1,11 +1,3 @@
-"""Async database placeholders for development mode.
-
-These stubs allow the FastAPI application to import async database helpers
-without requiring the production Postgres implementation. When running in
-SQLite development mode, the sync database defined in ``local_db`` is used
-instead.
-"""
-
 from typing import Optional, Any, Dict, List, AsyncGenerator
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, AsyncEngine
@@ -23,14 +15,17 @@ class User(Base):
     __tablename__ = "users"
     
     id = Column(Integer, primary_key=True, index=True)
+    google_id = Column(String, unique=True, index=True, nullable=True)
     email = Column(String, unique=True, index=True, nullable=False)
-    hashed_password = Column(String, nullable=False)
+    hashed_password = Column(String, nullable=True)
     name = Column(String, nullable=True)
+    picture_url = Column(String, nullable=True)
     courses = Column(JSON, default=[])
     bio = Column(String, nullable=True)
     prefs = Column(JSON, default={"studyStyle": [], "timeSlots": [], "locations": []})
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    last_login = Column(DateTime, default=datetime.utcnow)
     
     # Relationships
     owned_groups = relationship("Group", back_populates="owner")
@@ -118,7 +113,13 @@ class UserRepository:
             select(User).filter(User.email == email)
         )
         return result.scalars().first()
-    
+
+    async def get_user_by_google_id(self, google_id: str) -> Optional[User]:
+        result = await self.db.execute(
+            select(User).filter(User.google_id == google_id)
+        )
+        return result.scalars().first()
+
     async def create_user(self, user_data: Dict[str, Any]) -> User:
         db_user = User(**user_data)
         self.db.add(db_user)
@@ -138,6 +139,32 @@ class UserRepository:
         await self.db.commit()
         await self.db.refresh(user)
         return user
+
+    async def create_or_update_oauth_user(self, google_id: str, name: str, email: str, picture_url: str) -> User:
+        user = await self.get_user_by_google_id(google_id)
+        if user:
+            user.name = name
+            user.email = email
+            user.picture_url = picture_url
+            user.updated_at = datetime.utcnow()
+        else:
+            user = User(
+                google_id=google_id,
+                name=name,
+                email=email,
+                picture_url=picture_url,
+                hashed_password="", # Not used for OAuth
+            )
+            self.db.add(user)
+        await self.db.commit()
+        await self.db.refresh(user)
+        return user
+
+    async def update_last_login(self, user_id: int) -> None:
+        user = await self.get_user(user_id)
+        if user:
+            user.last_login = datetime.utcnow()
+            await self.db.commit()
 
 class GroupRepository:
     """Group repository for database operations."""
@@ -184,6 +211,18 @@ class GroupRepository:
         )
         await self.db.commit()
         return result.rowcount > 0
+
+    async def get_all_groups(self, limit: int = 20, offset: int = 0) -> List[Group]:
+        result = await self.db.execute(
+            select(Group).offset(offset).limit(limit)
+        )
+        return result.scalars().all()
+
+    async def get_groups_for_member(self, user_id: int) -> List[Group]:
+        result = await self.db.execute(
+            select(Group).join(GroupMember).filter(GroupMember.user_id == user_id)
+        )
+        return result.scalars().all()
 
 class MessageRepository:
     """Message repository for database operations."""

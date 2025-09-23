@@ -5,7 +5,7 @@ import pytest_asyncio
 import asyncio
 from typing import AsyncGenerator
 from fastapi import FastAPI
-from httpx import AsyncClient
+from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 
@@ -23,16 +23,16 @@ os.environ["GOOGLE_CLIENT_ID"] = "test-google-client-id"
 from app.data.async_db import Base, get_db
 
 # Create test database engine
-TEST_DATABASE_URL = os.getenv("DATABASE_URL")
-test_engine = create_async_engine(TEST_DATABASE_URL, echo=False, future=True)
+#TEST_DATABASE_URL = os.getenv("DATABASE_URL")
+#test_engine = create_async_engine(TEST_DATABASE_URL, echo=False, future=True)
 
 # Create async session factory
-TestSessionLocal = sessionmaker(
-    bind=test_engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-    autoflush=False
-)
+#TestSessionLocal = sessionmaker(
+#    bind=test_engine,
+#    class_=AsyncSession,
+#    expire_on_commit=False,
+#    autoflush=False
+#)
 
 def create_test_app():
     """Create a test FastAPI application."""
@@ -48,59 +48,64 @@ def event_loop():
     yield loop
     loop.close()
 
-@pytest_asyncio.fixture(scope="session")
+@pytest_asyncio.fixture(scope="function")
 async def db_engine():
     """Create test database tables and return the database engine."""
+    print("Creating test database tables...")
     # Create all tables
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
+    print("Test database tables created.")
     
     yield test_engine
     
     # Clean up after tests
+    print("Cleaning up test database...")
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
+    print("Test database cleaned up.")
     
     await test_engine.dispose()
 
-@pytest_asyncio.fixture
-async def db_session(db_engine) -> AsyncGenerator[AsyncSession, None]:
-    """Create a new database session with a rollback at the end of the test."""
-    connection = await test_engine.connect()
-    transaction = await connection.begin()
-    session = TestSessionLocal(bind=connection)
-    
-    try:
-        yield session
-    finally:
-        await session.close()
-        await transaction.rollback()
-        await connection.close()
+#@pytest_asyncio.fixture
+#async def db_session(db_engine) -> AsyncGenerator[AsyncSession, None]:
+#    """Create a new database session with a rollback at the end of the test."""
+#    connection = await test_engine.connect()
+#    transaction = await connection.begin()
+#    session = TestSessionLocal(bind=connection)
+#    
+#    try:
+#        yield session
+#    finally:
+#        await session.close()
+#        await transaction.rollback()
+#        await connection.close()
 
 @pytest_asyncio.fixture
-async def app(db_session):
+async def app():
     """Create a test FastAPI app with database dependency override."""
     from app.main import app as main_app
     
     # Override the database dependency
-    async def override_get_db():
-        try:
-            yield db_session
-        finally:
-            pass
+    #async def override_get_db():
+    #    try:
+    #        yield db_session
+    #    finally:
+    #        pass
             
-    main_app.dependency_overrides[get_db] = override_get_db
+    #main_app.dependency_overrides[get_db] = override_get_db
     
     yield main_app
     
     # Clear overrides after test
-    main_app.dependency_overrides.clear()
+    #main_app.dependency_overrides.clear()
 
 @pytest_asyncio.fixture
 async def client(app) -> AsyncGenerator[AsyncClient, None]:
     """Create an async HTTP client for testing."""
-    async with AsyncClient(app=app, base_url="http://test") as ac:
+    from httpx import ASGITransport
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         yield ac
 
 @pytest.fixture

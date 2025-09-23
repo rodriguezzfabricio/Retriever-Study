@@ -637,7 +637,7 @@ async def refresh_access_token(request: Request, refresh_request: RefreshTokenRe
             raise AuthError("Invalid token: missing user identifier", 400)
         
         # Step 4: Verify user still exists and is active
-        user_record = await repos["user_repo"].get_user_by_id(user_id)
+        user_record = await repos["user_repo"].get_user(user_id)
             
         if not user_record:
             raise AuthError("User account not found or deactivated", 404)
@@ -693,7 +693,7 @@ async def get_current_user_profile(request: Request, current_user = Depends(get_
     - Endpoint receives validated user data
     """
     try:
-        user_record = await repos["user_repo"].get_user_by_id(current_user["user_id"])
+        user_record = await repos["user_repo"].get_user(current_user["user_id"])
         
         if not user_record:
             raise HTTPException(
@@ -907,7 +907,7 @@ async def update_current_user_profile(
     """
     try:
         # Get current user record from database
-        user_record = await repos["user_repo"].get_user_by_id(current_user["user_id"]) 
+        user_record = await repos["user_repo"].get_user(current_user["user_id"]) 
             
         if not user_record:
             raise HTTPException(status_code=404, detail="User profile not found")
@@ -929,7 +929,7 @@ async def update_current_user_profile(
             )
         
         # Update user information with sanitized data
-        updated_user = await repos["user_repo"].update_user_by_id(
+        updated_user = await repos["user_repo"].update_user(
             user_id=current_user["user_id"],
             user_data={
                 'name': sanitized_name,
@@ -1039,21 +1039,22 @@ async def create_study_group(
                 expires_at = end_date.isoformat()
 
         # Create group with sanitized data
-        created_group_dict = await repos["group_repo"].create_group({
-            'name': sanitized_title,  # Map title to name for new schema
-            'description': sanitized_description,
-            'subject': group_data.courseCode,  # Map courseCode to subject
-            'max_members': sanitized_max_members,
-            'created_by': current_user["user_id"],
-            'semester': group_data.semester,
-            'expires_at': expires_at,
-            'department': sanitized_department,
-            'difficulty': sanitized_difficulty,
-            'meeting_type': sanitized_meeting_type,
-            'time_slot': sanitized_time_slot,
-            'study_style': sanitized_study_styles,
-            'group_size': sanitized_group_size,
-        })
+        created_group_dict = await repos["group_repo"].create_group(
+            group_data={
+                'title': sanitized_title,
+                'description': sanitized_description,
+                'course_code': group_data.courseCode,
+                'max_members': sanitized_max_members,
+                'expires_at': expires_at,
+                'department': sanitized_department,
+                'difficulty': sanitized_difficulty,
+                'meeting_type': sanitized_meeting_type,
+                'time_slot': sanitized_time_slot,
+                'study_style': sanitized_study_styles,
+                'group_size': sanitized_group_size,
+            },
+            owner_id=current_user["user_id"]
+        )
         
         # Validate text before AI embedding generation
         validated_embedding_text = f"Title: {sanitized_title}. Description: {sanitized_description}. Tags: {' '.join(sanitized_tags)}."
@@ -1115,7 +1116,7 @@ async def get_groups(request: Request, courseCode: Optional[str] = None, offset:
         groups_data = await repos["group_repo"].search_groups("", subject_filter=courseCode)
         paginated_groups = groups_data[offset:offset + limit]
     else:
-        groups_data = await repos["group_repo"].get_groups_with_pagination(limit=limit, offset=offset)
+        groups_data = await repos["group_repo"].get_all_groups(limit=limit, offset=offset)
         paginated_groups = groups_data
 
     normalized_groups = [normalize_group_record(group) for group in paginated_groups]
@@ -1134,7 +1135,7 @@ async def get_group_details(request: Request, groupId: str, repos: dict = Depend
     - Proper error handling for non-existent groups
     """
     try:
-        group_data = await repos["group_repo"].get_group_by_id(groupId)
+        group_data = await repos["group_repo"].get_group(groupId)
 
         if not group_data:
             raise HTTPException(
@@ -1179,7 +1180,7 @@ async def join_study_group(
     try:
         # Join group with authenticated user ID
         try:
-            updated_group = await repos["group_repo"].join_group(groupId, current_user["user_id"])
+            updated_group = await repos["group_repo"].add_member(groupId, current_user["user_id"])
         except (GroupCapacityError, ValueError) as capacity_error:
             raise HTTPException(
                 status_code=409,
@@ -1227,7 +1228,7 @@ async def leave_study_group(
         user_id = current_user["user_id"]
 
         # Use async repo if available, otherwise fallback to local sqlite
-        updated_group = await repos["group_repo"].leave_group(groupId, user_id)
+        updated_group = await repos["group_repo"].remove_member(groupId, user_id)
 
         if not updated_group:
             raise HTTPException(status_code=404, detail="Study group not found")
@@ -1271,7 +1272,7 @@ async def get_personalized_recommendations(
         validate_ai_computation_limits(current_user["user_id"], "recommendations")
         
         # Get current user from database by Google ID
-        user = await repos["user_repo"].get_user_by_id(current_user["user_id"]) 
+        user = await repos["user_repo"].get_user(current_user["user_id"]) 
             
         if not user:
             raise HTTPException(
@@ -1298,7 +1299,7 @@ async def get_personalized_recommendations(
             await repos["user_repo"].update_user_embedding(user["userId"], user_embedding)
         
         # Get all available study groups
-        all_groups = await repos["group_repo"].get_groups_with_pagination(limit=100)
+        all_groups = await repos["group_repo"].get_all_groups(limit=100)
 
         normalized_groups = [normalize_group_record(group) for group in all_groups]
 
@@ -1354,7 +1355,7 @@ async def search_groups(request: Request, q: str, limit: int = 10, repos: dict =
         query_embedding = await ai_service.generate_embedding_async(validated_query)
 
     # 2. Get all groups with embeddings
-    all_groups = await repos["group_repo"].get_groups_with_pagination(limit=100)
+    all_groups = await repos["group_repo"].get_all_groups(limit=100)
 
     normalized_groups = [normalize_group_record(group) for group in all_groups]
 
@@ -1398,8 +1399,7 @@ async def create_message(message_data: MessageCreate, repos: dict = Depends(get_
     created_message_dict = await repos["message_repo"].create_message(
         group_id=message_data.groupId,
         sender_id=message_data.senderId, 
-        content=message_data.content,
-        toxicity_score=toxicity_score
+        content=message_data.content
     )
     
     return Message(**created_message_dict)
@@ -1409,13 +1409,13 @@ async def get_messages(groupId: str, limit: int = 50, repos: dict = Depends(get_
     """
     Retrieves messages for a specific group.
     """
-    messages_data = await repos["message_repo"].get_messages_by_group(groupId, limit)
+    messages_data = await repos["message_repo"].get_messages(groupId, limit)
     enriched: List[Message] = []
     for msg in messages_data:
         # Try to resolve a friendly sender name
         sender_name = None
         try:
-            user = await repos["user_repo"].get_user_by_id(msg.get("senderId"))
+            user = await repos["user_repo"].get_user(msg.get("senderId"))
             if user:
                 sender_name = user.get("name")
         except Exception:
@@ -1431,7 +1431,7 @@ async def summarize_group_chat(groupId: str, since: str = None, repos: dict = De
     Summarizes recent messages in a group into 3-5 bullet points.
     """
     # 1. Get recent messages (last 20 for good context without model limits)
-    recent_messages = await repos["message_repo"].get_messages_by_group(groupId, limit=20)
+    recent_messages = await repos["message_repo"].get_messages(groupId, limit=20)
     
     # 2. Handle edge case: too few messages for meaningful summary
     if len(recent_messages) < 3:
@@ -1517,8 +1517,7 @@ async def websocket_group_chat(websocket: WebSocket, group_id: str, token: str =
                         created = await repos["message_repo"].create_message(
                             group_id=group_id,
                             sender_id=user_id,
-                            content=safe_content,
-                            toxicity_score=toxicity_score
+                            content=safe_content
                         )
                     except Exception as e:
                         logger.error("Failed to persist message", group_id=group_id, user_id=user_id, error=str(e))
@@ -1527,7 +1526,7 @@ async def websocket_group_chat(websocket: WebSocket, group_id: str, token: str =
                     # Resolve sender display name (prefer DB, fallback to token)
                     sender_name = None
                     try:
-                        prof = await repos["user_repo"].get_user_by_id(user_id)
+                        prof = await repos["user_repo"].get_user(user_id)
                         if prof:
                             sender_name = prof.get('name')
                     except Exception:
@@ -1610,40 +1609,41 @@ async def get_group_chat_stats(request: Request, group_id: str, current_user = D
             detail="Failed to retrieve chat statistics"
         )
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialize async database and AI services for production performance"""
-    global async_initialized
-    try:
-        # Get database URL from environment configuration
-        database_url = config.get_database_url()
-        
-        logger.info("Initializing production async database pool")
-        await initialize_async_database(database_url)
-        
-        # Initialize async AI service with environment-specific thread pools
-        initialize_ai_service(max_workers=config.ai.thread_pool_size)
-        
-        # Start connection pool monitoring
-        await pool_monitor.start_monitoring(async_db)
-        
-        logger.info("Production async services initialized successfully")
+if os.getenv("ENVIRONMENT") != "test":
+    @app.on_event("startup")
+    async def startup_event():
+        """Initialize async database and AI services for production performance"""
+        global async_initialized
+        try:
+            # Get database URL from environment configuration
+            database_url = config.get_database_url()
             
-    except Exception as e:
-        logger.error("Failed to initialize async services", error=str(e))
-        # Fall back to sync operations
-        async_initialized = False
+            logger.info("Initializing production async database pool")
+            await initialize_async_database(database_url)
+            
+            # Initialize async AI service with environment-specific thread pools
+            initialize_ai_service(max_workers=config.ai.thread_pool_size)
+            
+            # Start connection pool monitoring
+            await pool_monitor.start_monitoring(async_db)
+            
+            logger.info("Production async services initialized successfully")
+                
+        except Exception as e:
+            logger.error("Failed to initialize async services", error=str(e))
+            # Fall back to sync operations
+            async_initialized = False
 
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Close database connections and cleanup resources when the app shuts down"""
-    try:
-        await pool_monitor.stop_monitoring()
-        await cleanup_ai_service()
-        await close_async_database()
-        logger.info("Async services shutdown complete")
-    except Exception as e:
-        logger.error("Error during shutdown", error=str(e))
+    @app.on_event("shutdown")
+    async def shutdown_event():
+        """Close database connections and cleanup resources when the app shuts down"""
+        try:
+            await pool_monitor.stop_monitoring()
+            await cleanup_ai_service()
+            await close_async_database()
+            logger.info("Async services shutdown complete")
+        except Exception as e:
+            logger.error("Error during shutdown", error=str(e))
 
 
 
