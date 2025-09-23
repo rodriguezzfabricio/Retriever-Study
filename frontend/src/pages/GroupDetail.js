@@ -30,7 +30,7 @@ const GroupDetail = () => {
         socketService.disconnect(socket);
       };
     }
-  }, [groupId]);
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
