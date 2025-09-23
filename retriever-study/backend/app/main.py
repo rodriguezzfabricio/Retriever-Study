@@ -16,8 +16,7 @@ from datetime import datetime, timezone
 import os
 
 # Import our own modules
-from app.data.local_db import db, GroupCapacityError  # Keep for compatibility
-from app.data.async_db import initialize_async_database, close_async_database, user_repo, group_repo, async_db
+from app.data.async_db import initialize_async_database, close_async_database, get_repositories, async_db
 from app.core.embeddings import embed_text, cosine_similarity, summarize_text
 from app.core.toxicity import get_toxicity_score
 from app.core.auth import (
@@ -63,7 +62,7 @@ from app.core.security import (
     validate_ai_computation_limits,
     _rate_limit_exceeded_handler
 )
-from app.core.time import get_semester_end_date
+
 from slowapi.errors import RateLimitExceeded
 
 # Load environment configuration
@@ -79,6 +78,7 @@ logger = get_logger('retriever_api')
 
 # Initialize async components flag
 async_initialized = False
+
 
 # --- Business constants ---
 DEFAULT_MAX_MEMBERS = 8
@@ -330,6 +330,11 @@ def normalize_group_record(raw_group: Dict[str, Any]) -> Optional[Dict[str, Any]
 
     return normalized
 
+class GroupCapacityError(Exception):
+    """Raised when attempting to add a member to a full group."""
+    pass
+
+
 class JoinGroupRequest(BaseModel):
     userId: str
 
@@ -526,7 +531,7 @@ async def get_google_oauth_config():
 
 @limiter.limit("10/minute")
 @app.post("/auth/google/callback", response_model=TokenResponse)
-async def google_oauth_callback(request: Request, payload: GoogleCallbackRequest):
+async def google_oauth_callback(request: Request, payload: GoogleCallbackRequest, repos: dict = Depends(get_repositories)):
     """
     Accept a Google ID token, verify it, upsert the user, and return backend-signed JWTs.
 
@@ -555,15 +560,14 @@ async def google_oauth_callback(request: Request, payload: GoogleCallbackRequest
         sanitized_name = sanitize_string(display_name, max_length=100)
         picture_url = google_user.get("picture")
 
-        # UTDF requires usage of create_or_update_oauth_user in local_db.py
-        user_record = db.create_or_update_oauth_user(
+        user_record = await repos["user_repo"].create_or_update_oauth_user(
             google_id=google_id,
             name=sanitized_name,
             email=email,
             picture_url=picture_url,
         )
 
-        db.update_last_login(user_record["userId"])
+        await repos["user_repo"].update_last_login(user_record["userId"])
 
         # Minimal JWT payload per security guidance: only internal userId and email
         token_payload = {
@@ -604,7 +608,7 @@ async def google_oauth_callback(request: Request, payload: GoogleCallbackRequest
 
 @limiter.limit("10/minute")
 @app.post("/auth/refresh", response_model=TokenResponse)
-async def refresh_access_token(request: Request, refresh_request: RefreshTokenRequest):
+async def refresh_access_token(request: Request, refresh_request: RefreshTokenRequest, repos: dict = Depends(get_repositories)):
     """
     Exchange refresh token for new access token.
     
@@ -633,14 +637,7 @@ async def refresh_access_token(request: Request, refresh_request: RefreshTokenRe
             raise AuthError("Invalid token: missing user identifier", 400)
         
         # Step 4: Verify user still exists and is active
-        if async_initialized and user_repo:
-            if hasattr(user_repo, "get_user_by_id"):
-                user_record = await user_repo.get_user_by_id(user_id)
-            else:
-                # Legacy fallback
-                user_record = await user_repo.get_user_by_google_id(user_id)
-        else:
-            user_record = db.get_user_by_id(user_id)
+        user_record = await repos["user_repo"].get_user_by_id(user_id)
             
         if not user_record:
             raise AuthError("User account not found or deactivated", 404)
@@ -680,7 +677,7 @@ async def refresh_access_token(request: Request, refresh_request: RefreshTokenRe
 
 @limiter.limit("100/minute")
 @app.get("/auth/me", response_model=UserProfile)
-async def get_current_user_profile(request: Request, current_user = Depends(get_current_user)):
+async def get_current_user_profile(request: Request, current_user = Depends(get_current_user), repos: dict = Depends(get_repositories)):
     """
     Get current user's profile information.
     
@@ -696,14 +693,7 @@ async def get_current_user_profile(request: Request, current_user = Depends(get_
     - Endpoint receives validated user data
     """
     try:
-        # Get fresh user data from database (in case profile was updated)
-        if async_initialized and user_repo:
-            if hasattr(user_repo, "get_user_by_id"):
-                user_record = await user_repo.get_user_by_id(current_user["user_id"])
-            else:
-                user_record = await user_repo.get_user_by_google_id(current_user["user_id"])
-        else:
-            user_record = db.get_user_by_id(current_user["user_id"])
+        user_record = await repos["user_repo"].get_user_by_id(current_user["user_id"])
         
         if not user_record:
             raise HTTPException(
@@ -739,7 +729,8 @@ async def get_current_user_profile(request: Request, current_user = Depends(get_
 async def get_user_groups(
     request: Request,
     user_id: str,
-    current_user = Depends(get_current_user)
+    current_user = Depends(get_current_user),
+    repos: dict = Depends(get_repositories)
 ):
     """Return groups the authenticated user belongs to."""
     try:
@@ -751,10 +742,7 @@ async def get_user_groups(
         if user_id not in {requester_id, current_user.get("userId"), current_user.get("id")}:  # type: ignore[arg-type]
             raise HTTPException(status_code=403, detail="Cannot view other users' groups")
 
-        if async_initialized and group_repo and hasattr(group_repo, "get_groups_for_member"):
-            groups_data = await group_repo.get_groups_for_member(requester_id)
-        else:
-            groups_data = db.get_groups_for_user(requester_id)
+        groups_data = await repos["group_repo"].get_groups_for_member(requester_id)
 
         normalized_groups = [normalize_group_record(group) for group in groups_data]
         return [Group(**group) for group in normalized_groups if group]
@@ -900,7 +888,8 @@ async def get_error_summary(request: Request, window_hours: int = 1):
 async def update_current_user_profile(
     request: Request,
     user_updates: UserCreate,
-    current_user = Depends(get_current_user)
+    current_user = Depends(get_current_user),
+    repos: dict = Depends(get_repositories)
 ):
     """
     Update the current authenticated user's profile information.
@@ -918,13 +907,7 @@ async def update_current_user_profile(
     """
     try:
         # Get current user record from database
-        if async_initialized and user_repo:
-            if hasattr(user_repo, "get_user_by_id"):
-                user_record = await user_repo.get_user_by_id(current_user["user_id"])
-            else:
-                user_record = await user_repo.get_user_by_google_id(current_user["user_id"])
-        else:
-            user_record = db.get_user_by_id(current_user["user_id"]) 
+        user_record = await repos["user_repo"].get_user_by_id(current_user["user_id"]) 
             
         if not user_record:
             raise HTTPException(status_code=404, detail="User profile not found")
@@ -946,34 +929,14 @@ async def update_current_user_profile(
             )
         
         # Update user information with sanitized data
-        if async_initialized and user_repo:
-            if hasattr(user_repo, "update_user_by_id"):
-                updated_user = await user_repo.update_user_by_id(
-                    user_id=current_user["user_id"],
-                    user_data={
-                        'name': sanitized_name,
-                        'email': current_user["email"],  # Email from JWT (can't be changed)
-                        'picture_url': current_user.get("picture")
-                    }
-                )
-            else:
-                # Fallback to updating by google_id if repository doesn't support ID-based update
-                updated_user = await user_repo.update_user_by_google_id(
-                    google_id=user_record.get("google_id"),
-                    user_data={
-                        'name': sanitized_name,
-                        'email': current_user["email"],
-                        'picture_url': current_user.get("picture")
-                    }
-                )
-        else:
-            # Local DB uses google_id for upsert; use the one from user_record
-            updated_user = db.create_or_update_oauth_user(
-                google_id=user_record.get("google_id"),
-                name=sanitized_name,
-                email=current_user["email"],  # Email from JWT (can't be changed)
-                picture_url=current_user.get("picture")
-            )
+        updated_user = await repos["user_repo"].update_user_by_id(
+            user_id=current_user["user_id"],
+            user_data={
+                'name': sanitized_name,
+                'email': current_user["email"],  # Email from JWT (can't be changed)
+                'picture_url': current_user.get("picture")
+            }
+        )
         
         # Update additional profile fields (courses, bio, preferences)
         # This would need new database methods in production
@@ -982,20 +945,11 @@ async def update_current_user_profile(
         # Regenerate AI embedding with new profile data  
         embedding_text = _generate_user_text_for_embedding(user_updates)
         
-        if async_initialized and ai_service:
-            # Use async AI service with performance monitoring
-            with get_ai_operation_monitor("user_profile_embedding"):
-                user_embedding = await ai_service.generate_embedding_async(embedding_text)
-        else:
-            # Fallback to sync embedding
-            user_embedding = embed_text(embedding_text)
+        with get_ai_operation_monitor("user_profile_embedding"):
+            user_embedding = await ai_service.generate_embedding_async(embedding_text)
             
         # Update embedding in database
-        if async_initialized:
-            # Would need async embedding update method in user_repo
-            pass  # TODO: Implement async embedding update
-        else:
-            db.update_user_embedding(updated_user['userId'], user_embedding)
+        await repos["user_repo"].update_user_embedding(updated_user['userId'], user_embedding)
         
         return UserProfile(
             id=updated_user["userId"],
@@ -1021,7 +975,8 @@ async def update_current_user_profile(
 async def create_study_group(
     request: Request,
     group_data: GroupCreate,
-    current_user = Depends(get_current_user)
+    current_user = Depends(get_current_user),
+    repos: dict = Depends(get_repositories)
 ):
     """
     Create a new study group with the current user as owner.
@@ -1084,42 +1039,21 @@ async def create_study_group(
                 expires_at = end_date.isoformat()
 
         # Create group with sanitized data
-        if async_initialized and group_repo:
-            created_group_dict = await group_repo.create_group({
-                'name': sanitized_title,  # Map title to name for new schema
-                'description': sanitized_description,
-                'subject': group_data.courseCode,  # Map courseCode to subject
-                'max_members': sanitized_max_members,
-                'created_by': current_user["user_id"],
-                'semester': group_data.semester,
-                'expires_at': expires_at,
-                'department': sanitized_department,
-                'difficulty': sanitized_difficulty,
-                'meeting_type': sanitized_meeting_type,
-                'time_slot': sanitized_time_slot,
-                'study_style': sanitized_study_styles,
-                'group_size': sanitized_group_size,
-            })
-        else:
-            # Fallback to sync database
-            created_group_dict = db.create_group(
-                course_code=group_data.courseCode,
-                title=sanitized_title,
-                description=sanitized_description,
-                tags=sanitized_tags,
-                time_prefs=group_data.timePrefs,
-                location=sanitized_location,
-                owner_id=current_user["user_id"],
-                max_members=sanitized_max_members,
-                semester=group_data.semester,
-                expires_at=expires_at,
-                department=sanitized_department,
-                difficulty=sanitized_difficulty,
-                meeting_type=sanitized_meeting_type,
-                time_slot=sanitized_time_slot,
-                study_style=sanitized_study_styles,
-                group_size=sanitized_group_size,
-            )
+        created_group_dict = await repos["group_repo"].create_group({
+            'name': sanitized_title,  # Map title to name for new schema
+            'description': sanitized_description,
+            'subject': group_data.courseCode,  # Map courseCode to subject
+            'max_members': sanitized_max_members,
+            'created_by': current_user["user_id"],
+            'semester': group_data.semester,
+            'expires_at': expires_at,
+            'department': sanitized_department,
+            'difficulty': sanitized_difficulty,
+            'meeting_type': sanitized_meeting_type,
+            'time_slot': sanitized_time_slot,
+            'study_style': sanitized_study_styles,
+            'group_size': sanitized_group_size,
+        })
         
         # Validate text before AI embedding generation
         validated_embedding_text = f"Title: {sanitized_title}. Description: {sanitized_description}. Tags: {' '.join(sanitized_tags)}."
@@ -1130,24 +1064,15 @@ async def create_study_group(
         )
         
         # Generate AI embedding for group matching
-        if async_initialized and ai_service:
-            # Use async AI service with performance monitoring
-            with get_ai_operation_monitor("group_embedding"):
-                group_embedding = await ai_service.generate_embedding_async(validated_embedding_text)
-        else:
-            # Fallback to sync embedding
-            group_embedding = embed_text(validated_embedding_text)
+        with get_ai_operation_monitor("group_embedding"):
+            group_embedding = await ai_service.generate_embedding_async(validated_embedding_text)
         
         # Store embedding in database
         normalized_group = normalize_group_record(created_group_dict)
         if not normalized_group:
             raise HTTPException(status_code=500, detail="Failed to normalize created group")
 
-        if async_initialized:
-            # Would need async embedding update method
-            pass  # TODO: Implement async group embedding update
-        else:
-            db.update_group_embedding(normalized_group['groupId'], group_embedding)
+        await repos["group_repo"].update_group_embedding(normalized_group['groupId'], group_embedding)
 
         # Return complete group object
         normalized_group['embedding'] = group_embedding
@@ -1162,11 +1087,11 @@ async def create_study_group(
 
 @limiter.limit("50/minute")
 @app.get("/groups/trending", response_model=List[Group])
-async def get_trending_groups_endpoint(request: Request, limit: int = 6):
+async def get_trending_groups_endpoint(request: Request, limit: int = 6, repos: dict = Depends(get_repositories)):
     """Return trending study groups based on recent activity and growth."""
     try:
         safe_limit = max(1, min(20, limit))
-        groups_data = db.get_trending_groups(safe_limit)
+        groups_data = await repos["group_repo"].get_trending_groups(safe_limit)
         normalized = [normalize_group_record(group) for group in groups_data]
         return [Group(**group) for group in normalized if group]
     except Exception as exc:
@@ -1176,7 +1101,7 @@ async def get_trending_groups_endpoint(request: Request, limit: int = 6):
 
 @limiter.limit("200/minute")
 @app.get("/groups", response_model=List[Group])
-async def get_groups(request: Request, courseCode: Optional[str] = None, offset: int = 0, limit: int = 20):
+async def get_groups(request: Request, courseCode: Optional[str] = None, offset: int = 0, limit: int = 20, repos: dict = Depends(get_repositories)):
     """
     Retrieve study groups.
 
@@ -1186,26 +1111,19 @@ async def get_groups(request: Request, courseCode: Optional[str] = None, offset:
     This change makes the "All Groups" page truly show all groups so users
     can discover study groups from any course, not just their first course.
     """
-    if async_initialized and group_repo:
-        if courseCode:
-            groups_data = await group_repo.search_groups("", subject_filter=courseCode)
-            paginated_groups = groups_data[offset:offset + limit]
-        else:
-            groups_data = await group_repo.get_groups_with_pagination(limit=limit, offset=offset)
-            paginated_groups = groups_data
-    else:
-        if courseCode:
-            groups_data = db.get_groups_by_course(courseCode)
-        else:
-            groups_data = db.get_all_groups()
+    if courseCode:
+        groups_data = await repos["group_repo"].search_groups("", subject_filter=courseCode)
         paginated_groups = groups_data[offset:offset + limit]
+    else:
+        groups_data = await repos["group_repo"].get_groups_with_pagination(limit=limit, offset=offset)
+        paginated_groups = groups_data
 
     normalized_groups = [normalize_group_record(group) for group in paginated_groups]
     return [Group(**group) for group in normalized_groups if group]
 
 @limiter.limit("100/minute")
 @app.get("/groups/{groupId}", response_model=Group)
-async def get_group_details(request: Request, groupId: str):
+async def get_group_details(request: Request, groupId: str, repos: dict = Depends(get_repositories)):
     """
     Retrieves detailed information for a specific study group.
 
@@ -1216,12 +1134,7 @@ async def get_group_details(request: Request, groupId: str):
     - Proper error handling for non-existent groups
     """
     try:
-        if async_initialized and group_repo:
-            # Use async database for better performance
-            group_data = await group_repo.get_group_by_id(groupId)
-        else:
-            # Fallback to sync database
-            group_data = db.get_group_by_id(groupId)
+        group_data = await repos["group_repo"].get_group_by_id(groupId)
 
         if not group_data:
             raise HTTPException(
@@ -1251,7 +1164,8 @@ async def get_group_details(request: Request, groupId: str):
 async def join_study_group(
     request: Request,
     groupId: str,
-    current_user = Depends(get_current_user)
+    current_user = Depends(get_current_user),
+    repos: dict = Depends(get_repositories)
 ):
     """
     Add current authenticated user to a study group.
@@ -1265,7 +1179,7 @@ async def join_study_group(
     try:
         # Join group with authenticated user ID
         try:
-            updated_group = db.join_group(groupId, current_user["user_id"])
+            updated_group = await repos["group_repo"].join_group(groupId, current_user["user_id"])
         except (GroupCapacityError, ValueError) as capacity_error:
             raise HTTPException(
                 status_code=409,
@@ -1299,7 +1213,8 @@ async def join_study_group(
 async def leave_study_group(
     request: Request,
     groupId: str,
-    current_user = Depends(get_current_user)
+    current_user = Depends(get_current_user),
+    repos: dict = Depends(get_repositories)
 ):
     """
     Remove current authenticated user from a study group.
@@ -1312,10 +1227,7 @@ async def leave_study_group(
         user_id = current_user["user_id"]
 
         # Use async repo if available, otherwise fallback to local sqlite
-        if async_initialized and group_repo and hasattr(group_repo, "leave_group"):
-            updated_group = await group_repo.leave_group(groupId, user_id)
-        else:
-            updated_group = db.leave_group(groupId, user_id)
+        updated_group = await repos["group_repo"].leave_group(groupId, user_id)
 
         if not updated_group:
             raise HTTPException(status_code=404, detail="Study group not found")
@@ -1336,7 +1248,8 @@ async def leave_study_group(
 async def get_personalized_recommendations(
     request: Request,
     current_user = Depends(get_current_user),
-    limit: int = 5
+    limit: int = 5,
+    repos: dict = Depends(get_repositories)
 ):
     """
     Get AI-powered study group recommendations for the current user.
@@ -1358,13 +1271,7 @@ async def get_personalized_recommendations(
         validate_ai_computation_limits(current_user["user_id"], "recommendations")
         
         # Get current user from database by Google ID
-        if async_initialized and user_repo:
-            if hasattr(user_repo, "get_user_by_id"):
-                user = await user_repo.get_user_by_id(current_user["user_id"])
-            else:
-                user = await user_repo.get_user_by_google_id(current_user["user_id"])
-        else:
-            user = db.get_user_by_id(current_user["user_id"]) 
+        user = await repos["user_repo"].get_user_by_id(current_user["user_id"]) 
             
         if not user:
             raise HTTPException(
@@ -1385,25 +1292,13 @@ async def get_personalized_recommendations(
             # Compute embedding from validated user profile
             user_text = f"Bio: {user_bio}. Courses: {' '.join(user.get('courses', []))}."
             
-            if async_initialized and ai_service:
-                # Use async AI service with performance monitoring
-                with get_ai_operation_monitor("user_recommendations_embedding"):
-                    user_embedding = await ai_service.generate_embedding_async(user_text)
-            else:
-                # Fallback to sync embedding
-                user_embedding = embed_text(user_text)
-                
-            # Update embedding in database
-            if not async_initialized:
-                db.update_user_embedding(user["userId"], user_embedding)
+            with get_ai_operation_monitor("user_recommendations_embedding"):
+                user_embedding = await ai_service.generate_embedding_async(user_text)
+            
+            await repos["user_repo"].update_user_embedding(user["userId"], user_embedding)
         
         # Get all available study groups
-        if async_initialized and group_repo:
-            # Use async database with pagination
-            all_groups = await group_repo.get_groups_with_pagination(limit=100)
-        else:
-            # Fallback to sync database
-            all_groups = db.get_all_groups()
+        all_groups = await repos["group_repo"].get_groups_with_pagination(limit=100)
 
         normalized_groups = [normalize_group_record(group) for group in all_groups]
 
@@ -1434,7 +1329,7 @@ async def get_personalized_recommendations(
 
 @limiter.limit("30/minute")
 @app.get("/search", response_model=List[Group])
-async def search_groups(request: Request, q: str, limit: int = 10):
+async def search_groups(request: Request, q: str, limit: int = 10, repos: dict = Depends(get_repositories)):
     """
     Searches groups using natural language query with vector similarity.
     """
@@ -1455,21 +1350,11 @@ async def search_groups(request: Request, q: str, limit: int = 10):
     )
 
     # Convert validated search query to embedding
-    if async_initialized and ai_service:
-        # Use async AI service for embedding generation with monitoring
-        with get_ai_operation_monitor("search_embedding"):
-            query_embedding = await ai_service.generate_embedding_async(validated_query)
-    else:
-        # Fallback to sync embedding
-        query_embedding = embed_text(validated_query)
+    with get_ai_operation_monitor("search_embedding"):
+        query_embedding = await ai_service.generate_embedding_async(validated_query)
 
     # 2. Get all groups with embeddings
-    if async_initialized and group_repo:
-        # Use async database operations
-        all_groups = await group_repo.get_groups_with_pagination(limit=100)
-    else:
-        # Fallback to sync database
-        all_groups = db.get_all_groups()
+    all_groups = await repos["group_repo"].get_groups_with_pagination(limit=100)
 
     normalized_groups = [normalize_group_record(group) for group in all_groups]
 
@@ -1487,7 +1372,7 @@ async def search_groups(request: Request, q: str, limit: int = 10):
     return [Group(**group) for group in top_groups if group]
 
 @app.post("/messages", response_model=Message, status_code=201)
-def create_message(message_data: MessageCreate):
+async def create_message(message_data: MessageCreate, repos: dict = Depends(get_repositories)):
     """
     Creates a new message with toxicity filtering.
     Blocks toxic messages and stores non-toxic ones.
@@ -1510,7 +1395,7 @@ def create_message(message_data: MessageCreate):
         )
     
     # 4. Store the non-toxic message with its toxicity score
-    created_message_dict = db.create_message(
+    created_message_dict = await repos["message_repo"].create_message(
         group_id=message_data.groupId,
         sender_id=message_data.senderId, 
         content=message_data.content,
@@ -1520,19 +1405,17 @@ def create_message(message_data: MessageCreate):
     return Message(**created_message_dict)
 
 @app.get("/messages", response_model=List[Message])
-def get_messages(groupId: str, limit: int = 50):
+async def get_messages(groupId: str, limit: int = 50, repos: dict = Depends(get_repositories)):
     """
     Retrieves messages for a specific group.
     """
-    messages_data = db.get_messages_by_group(groupId, limit)
+    messages_data = await repos["message_repo"].get_messages_by_group(groupId, limit)
     enriched: List[Message] = []
     for msg in messages_data:
         # Try to resolve a friendly sender name
         sender_name = None
         try:
-            user = db.get_user_by_google_id(msg.get("senderId"))
-            if not user and msg.get("senderId"):
-                user = db.get_user_by_id(msg.get("senderId"))
+            user = await repos["user_repo"].get_user_by_id(msg.get("senderId"))
             if user:
                 sender_name = user.get("name")
         except Exception:
@@ -1543,12 +1426,12 @@ def get_messages(groupId: str, limit: int = 50):
     return enriched
 
 @app.post("/summarize")
-def summarize_group_chat(groupId: str, since: str = None):
+async def summarize_group_chat(groupId: str, since: str = None, repos: dict = Depends(get_repositories)):
     """
     Summarizes recent messages in a group into 3-5 bullet points.
     """
     # 1. Get recent messages (last 20 for good context without model limits)
-    recent_messages = db.get_messages_by_group(groupId, limit=20)
+    recent_messages = await repos["message_repo"].get_messages_by_group(groupId, limit=20)
     
     # 2. Handle edge case: too few messages for meaningful summary
     if len(recent_messages) < 3:
@@ -1569,7 +1452,7 @@ def summarize_group_chat(groupId: str, since: str = None):
 from app.core.websocket import connection_manager, authenticate_websocket_user
 
 @app.websocket("/ws/groups/{group_id}")
-async def websocket_group_chat(websocket: WebSocket, group_id: str, token: str = None):
+async def websocket_group_chat(websocket: WebSocket, group_id: str, token: str = None, repos: dict = Depends(get_repositories)):
     """
     WebSocket endpoint for real-time group chat
 
@@ -1631,7 +1514,7 @@ async def websocket_group_chat(websocket: WebSocket, group_id: str, token: str =
 
                     # Persist message to DB so history survives reconnects
                     try:
-                        created = db.create_message(
+                        created = await repos["message_repo"].create_message(
                             group_id=group_id,
                             sender_id=user_id,
                             content=safe_content,
@@ -1644,7 +1527,7 @@ async def websocket_group_chat(websocket: WebSocket, group_id: str, token: str =
                     # Resolve sender display name (prefer DB, fallback to token)
                     sender_name = None
                     try:
-                        prof = db.get_user_by_google_id(user_id) or db.get_user_by_id(user_id)
+                        prof = await repos["user_repo"].get_user_by_id(user_id)
                         if prof:
                             sender_name = prof.get('name')
                     except Exception:
@@ -1735,25 +1618,16 @@ async def startup_event():
         # Get database URL from environment configuration
         database_url = config.get_database_url()
         
-        if database_url.startswith("postgresql://") or database_url.startswith("asyncpg://"):
-            # Production: Initialize async PostgreSQL connection pool
-            logger.info("Initializing production async database pool")
-            await initialize_async_database(database_url)
-            
-            # Initialize async AI service with environment-specific thread pools
-            initialize_ai_service(max_workers=config.ai.thread_pool_size)
-            
-            # Start connection pool monitoring
-            await pool_monitor.start_monitoring(async_db)
-            
-            async_initialized = True
-            logger.info("Production async services initialized successfully")
-        else:
-            # Development: Keep using SQLite with sync operations
-            logger.info("Development mode: using SQLite with sync operations", 
-                       database_type="sqlite", 
-                       environment=config.environment.value)
-            async_initialized = False
+        logger.info("Initializing production async database pool")
+        await initialize_async_database(database_url)
+        
+        # Initialize async AI service with environment-specific thread pools
+        initialize_ai_service(max_workers=config.ai.thread_pool_size)
+        
+        # Start connection pool monitoring
+        await pool_monitor.start_monitoring(async_db)
+        
+        logger.info("Production async services initialized successfully")
             
     except Exception as e:
         logger.error("Failed to initialize async services", error=str(e))
@@ -1764,34 +1638,14 @@ async def startup_event():
 async def shutdown_event():
     """Close database connections and cleanup resources when the app shuts down"""
     try:
-        if async_initialized:
-            # Cleanup async services
-            await pool_monitor.stop_monitoring()
-            await cleanup_ai_service()
-            await close_async_database()
-            logger.info("Async services shutdown complete")
-        else:
-            # Cleanup sync database
-            db.close()
-            logger.info("Sync database closed")
+        await pool_monitor.stop_monitoring()
+        await cleanup_ai_service()
+        await close_async_database()
+        logger.info("Async services shutdown complete")
     except Exception as e:
         logger.error("Error during shutdown", error=str(e))
 
-from slowapi.errors import RateLimitExceeded
 
-# Load environment configuration
-config = get_config()
-
-# Initialize production logging system with environment-based settings
-setup_production_logging(
-    log_level=config.logging.level,
-    log_file=config.logging.file_path,
-    enable_console=config.is_development()
-)
-logger = get_logger('retriever_api')
-
-# Initialize async components flag
-async_initialized = False
 
 # --- Business constants ---
 DEFAULT_MAX_MEMBERS = 8

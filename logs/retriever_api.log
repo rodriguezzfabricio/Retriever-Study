@@ -1,0 +1,149 @@
+2025-09-21 18:45:34,528 - retriever_api - INFO - CORS configuration loaded | environment=development allowed_origins=['*']
+2025-09-21 18:46:11,630 - retriever_api - INFO - CORS configuration loaded | environment=development allowed_origins=['*']
+2025-09-21 18:48:20,258 - retriever_api - INFO - CORS configuration loaded | environment=development allowed_origins=['*']
+2025-09-21 18:49:29,877 - retriever_api - INFO - CORS configuration loaded | environment=development allowed_origins=['*']
+2025-09-21 18:49:29,930 - retriever_api - ERROR - Get profile error: 'UserRepository' object has no attribute 'get_user_by_id'
+2025-09-21 18:49:29,931 - httpx - INFO - HTTP Request: GET http://test/auth/me "HTTP/1.1 500 Internal Server Error"
+2025-09-21 18:49:29,944 - retriever_api - ERROR - Profile update error: 'UserRepository' object has no attribute 'get_user_by_id'
+2025-09-21 18:49:29,945 - httpx - INFO - HTTP Request: PUT http://test/users/me "HTTP/1.1 500 Internal Server Error"
+2025-09-21 18:49:29,957 - retriever_api - ERROR - Group creation error: GroupRepository.create_group() missing 1 required positional argument: 'owner_id'
+2025-09-21 18:49:29,957 - httpx - INFO - HTTP Request: POST http://test/groups "HTTP/1.1 500 Internal Server Error"
+2025-09-21 18:49:29,971 - retriever_api - ERROR - Unhandled exception
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 97, in receive
+    return self.receive_nowait()
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 92, in receive_nowait
+    raise WouldBlock
+anyio.WouldBlock
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 148, in call_next
+    message = await recv_stream.receive()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 112, in receive
+    raise EndOfStream
+anyio.EndOfStream
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/core/logging_config.py", line 113, in middleware
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 156, in call_next
+    raise app_exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 141, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 714, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 734, in app
+    await route.handle(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/main.py", line 1118, in get_groups
+    groups_data = await repos["group_repo"].get_groups_with_pagination(limit=limit, offset=offset)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'GroupRepository' object has no attribute 'get_groups_with_pagination'
+2025-09-21 18:49:30,230 - retriever_api - ERROR - Group join error: 'GroupRepository' object has no attribute 'join_group'
+2025-09-21 18:49:30,231 - httpx - INFO - HTTP Request: POST http://test/groups/None/join "HTTP/1.1 500 Internal Server Error"
+2025-09-21 18:49:30,239 - retriever_api - ERROR - Failed to retrieve user groups | user_id=testuser001 error='GroupRepository' object has no attribute 'get_groups_for_member'
+2025-09-21 18:49:30,240 - httpx - INFO - HTTP Request: GET http://test/users/testuser001/groups "HTTP/1.1 500 Internal Server Error"
+2025-09-21 18:49:30,247 - retriever_api - ERROR - Failed to leave group | error='GroupRepository' object has no attribute 'leave_group'
+2025-09-21 18:49:30,247 - httpx - INFO - HTTP Request: POST http://test/groups/None/leave "HTTP/1.1 500 Internal Server Error"
+2025-09-21 18:49:30,256 - httpx - INFO - HTTP Request: POST http://test/messages "HTTP/1.1 422 Unprocessable Entity"
+2025-09-21 18:51:49,680 - retriever_api - INFO - CORS configuration loaded | environment=development allowed_origins=['*']
+2025-09-21 18:51:49,728 - retriever_api - ERROR - Get profile error: 'UserRepository' object has no attribute 'get_user_by_id'
+2025-09-21 18:51:49,729 - httpx - INFO - HTTP Request: GET http://test/auth/me "HTTP/1.1 500 Internal Server Error"
+2025-09-21 18:51:49,755 - retriever_api - ERROR - Group creation error: GroupRepository.create_group() missing 1 required positional argument: 'owner_id'
+2025-09-21 18:51:49,756 - httpx - INFO - HTTP Request: POST http://test/groups "HTTP/1.1 500 Internal Server Error"
+2025-09-21 18:51:49,774 - retriever_api - ERROR - Unhandled exception
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 97, in receive
+    return self.receive_nowait()
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 92, in receive_nowait
+    raise WouldBlock
+anyio.WouldBlock
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 148, in call_next
+    message = await recv_stream.receive()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 112, in receive
+    raise EndOfStream
+anyio.EndOfStream
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/core/logging_config.py", line 113, in middleware
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 156, in call_next
+    raise app_exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 141, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 714, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 734, in app
+    await route.handle(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/main.py", line 1118, in get_groups
+    groups_data = await repos["group_repo"].get_groups_with_pagination(limit=limit, offset=offset)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'GroupRepository' object has no attribute 'get_groups_with_pagination'
+2025-09-21 18:51:50,127 - retriever_api - ERROR - Group join error: 'GroupRepository' object has no attribute 'join_group'
+2025-09-21 18:51:50,128 - httpx - INFO - HTTP Request: POST http://test/groups/None/join "HTTP/1.1 500 Internal Server Error"
+2025-09-21 18:51:50,137 - retriever_api - ERROR - Failed to retrieve user groups | user_id=testuser001 error='GroupRepository' object has no attribute 'get_groups_for_member'
+2025-09-21 18:51:50,138 - httpx - INFO - HTTP Request: GET http://test/users/testuser001/groups "HTTP/1.1 500 Internal Server Error"
+2025-09-21 18:51:50,147 - retriever_api - ERROR - Failed to leave group | error='GroupRepository' object has no attribute 'leave_group'
+2025-09-21 18:51:50,148 - httpx - INFO - HTTP Request: POST http://test/groups/None/leave "HTTP/1.1 500 Internal Server Error"
+2025-09-21 18:51:50,159 - httpx - INFO - HTTP Request: POST http://test/messages "HTTP/1.1 422 Unprocessable Entity"
