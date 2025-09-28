@@ -147,3 +147,1806 @@ AttributeError: 'GroupRepository' object has no attribute 'get_groups_with_pagin
 2025-09-21 18:51:50,147 - retriever_api - ERROR - Failed to leave group | error='GroupRepository' object has no attribute 'leave_group'
 2025-09-21 18:51:50,148 - httpx - INFO - HTTP Request: POST http://test/groups/None/leave "HTTP/1.1 500 Internal Server Error"
 2025-09-21 18:51:50,159 - httpx - INFO - HTTP Request: POST http://test/messages "HTTP/1.1 422 Unprocessable Entity"
+2025-09-23 11:58:38,946 - retriever_api - INFO - CORS configuration loaded | environment=development allowed_origins=['*']
+2025-09-23 13:31:00,988 - retriever_api - INFO - CORS configuration loaded | environment=development allowed_origins=['*']
+2025-09-23 13:31:01,042 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-09-23 13:31:01,079 - retriever_api - INFO - Google OAuth callback | endpoint=/auth/google/callback client_ip=testclient has_token=True
+2025-09-23 13:31:01,079 - retriever_api - ERROR - Google OAuth callback failed | error='async_generator' object has no attribute 'execute'
+2025-09-23 13:31:01,080 - httpx - INFO - HTTP Request: POST http://testserver/auth/google/callback "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:31:01,094 - retriever_api - ERROR - Get profile error: 'async_generator' object has no attribute 'execute'
+2025-09-23 13:31:01,095 - httpx - INFO - HTTP Request: GET http://testserver/auth/me "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:31:01,109 - retriever_api - ERROR - Profile update error: 'async_generator' object has no attribute 'execute'
+2025-09-23 13:31:01,110 - httpx - INFO - HTTP Request: PUT http://testserver/users/me "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:31:01,123 - httpx - INFO - HTTP Request: GET http://testserver/auth/me "HTTP/1.1 403 Forbidden"
+2025-09-23 13:31:01,135 - httpx - INFO - HTTP Request: POST http://testserver/auth/google/callback "HTTP/1.1 422 Unprocessable Entity"
+2025-09-23 13:31:01,158 - retriever_api - ERROR - Group creation error: 'department' is an invalid keyword argument for Group
+2025-09-23 13:31:01,159 - httpx - INFO - HTTP Request: POST http://testserver/groups "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:31:01,172 - retriever_api - ERROR - Failed to retrieve group details | group_id=test-group-001 error='async_generator' object has no attribute 'execute'
+2025-09-23 13:31:01,173 - httpx - INFO - HTTP Request: GET http://testserver/groups/test-group-001 "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:31:01,185 - retriever_api - ERROR - Unhandled exception
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 97, in receive
+    return self.receive_nowait()
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 92, in receive_nowait
+    raise WouldBlock
+anyio.WouldBlock
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 148, in call_next
+    message = await recv_stream.receive()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 112, in receive
+    raise EndOfStream
+anyio.EndOfStream
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/core/logging_config.py", line 113, in middleware
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 156, in call_next
+    raise app_exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 141, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 714, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 734, in app
+    await route.handle(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/main.py", line 1119, in get_groups
+    groups_data = await repos["group_repo"].get_all_groups(limit=limit, offset=offset)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/data/async_db.py", line 217, in get_all_groups
+    result = await self.db.execute(
+                   ^^^^^^^^^^^^^^^
+AttributeError: 'async_generator' object has no attribute 'execute'
+2025-09-23 13:31:01,572 - retriever_api - ERROR - Group join error: 'async_generator' object has no attribute 'execute'
+2025-09-23 13:31:01,573 - httpx - INFO - HTTP Request: POST http://testserver/groups/test-group-001/join "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:31:01,586 - retriever_api - ERROR - Failed to retrieve user groups | user_id=test-user-001 error='async_generator' object has no attribute 'execute'
+2025-09-23 13:31:01,586 - httpx - INFO - HTTP Request: GET http://testserver/users/test-user-001/groups "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:31:02,748 - retriever_api - ERROR - Unhandled exception
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 97, in receive
+    return self.receive_nowait()
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 92, in receive_nowait
+    raise WouldBlock
+anyio.WouldBlock
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 148, in call_next
+    message = await recv_stream.receive()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 112, in receive
+    raise EndOfStream
+anyio.EndOfStream
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/core/logging_config.py", line 113, in middleware
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 156, in call_next
+    raise app_exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 141, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 714, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 734, in app
+    await route.handle(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/main.py", line 1399, in create_message
+    created_message_dict = await repos["message_repo"].create_message(
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/data/async_db.py", line 249, in create_message
+    self.db.add(message)
+    ^^^^^^^^^^^
+AttributeError: 'async_generator' object has no attribute 'add'
+2025-09-23 13:31:03,027 - retriever_api - ERROR - Unhandled exception
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 97, in receive
+    return self.receive_nowait()
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 92, in receive_nowait
+    raise WouldBlock
+anyio.WouldBlock
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 148, in call_next
+    message = await recv_stream.receive()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 112, in receive
+    raise EndOfStream
+anyio.EndOfStream
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/core/logging_config.py", line 113, in middleware
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 156, in call_next
+    raise app_exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 141, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 714, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 734, in app
+    await route.handle(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/main.py", line 1412, in get_messages
+    messages_data = await repos["message_repo"].get_messages(groupId, limit)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/data/async_db.py", line 235, in get_messages
+    result = await self.db.execute(
+                   ^^^^^^^^^^^^^^^
+AttributeError: 'async_generator' object has no attribute 'execute'
+2025-09-23 13:31:03,369 - retriever_api - ERROR - Unhandled exception
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 97, in receive
+    return self.receive_nowait()
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 92, in receive_nowait
+    raise WouldBlock
+anyio.WouldBlock
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 148, in call_next
+    message = await recv_stream.receive()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 112, in receive
+    raise EndOfStream
+anyio.EndOfStream
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/core/logging_config.py", line 113, in middleware
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 156, in call_next
+    raise app_exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 141, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 714, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 734, in app
+    await route.handle(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/main.py", line 1399, in create_message
+    created_message_dict = await repos["message_repo"].create_message(
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/data/async_db.py", line 249, in create_message
+    self.db.add(message)
+    ^^^^^^^^^^^
+AttributeError: 'async_generator' object has no attribute 'add'
+2025-09-23 13:31:03,768 - retriever_api - ERROR - Unhandled exception
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 97, in receive
+    return self.receive_nowait()
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 92, in receive_nowait
+    raise WouldBlock
+anyio.WouldBlock
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 148, in call_next
+    message = await recv_stream.receive()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 112, in receive
+    raise EndOfStream
+anyio.EndOfStream
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/core/logging_config.py", line 113, in middleware
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 156, in call_next
+    raise app_exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 141, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 714, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 734, in app
+    await route.handle(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/main.py", line 1358, in search_groups
+    all_groups = await repos["group_repo"].get_all_groups(limit=100)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/data/async_db.py", line 217, in get_all_groups
+    result = await self.db.execute(
+                   ^^^^^^^^^^^^^^^
+AttributeError: 'async_generator' object has no attribute 'execute'
+2025-09-23 13:31:04,043 - httpx - INFO - HTTP Request: GET http://testserver/search?q= "HTTP/1.1 400 Bad Request"
+2025-09-23 13:31:04,056 - retriever_api - ERROR - Recommendations error: 'async_generator' object has no attribute 'execute'
+2025-09-23 13:31:04,057 - httpx - INFO - HTTP Request: GET http://testserver/recommendations?limit=3 "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:31:04,069 - httpx - INFO - HTTP Request: GET http://testserver/auth/me "HTTP/1.1 403 Forbidden"
+2025-09-23 13:31:04,082 - retriever_api - ERROR - Failed to retrieve group details | group_id=nonexistent-group-id error='async_generator' object has no attribute 'execute'
+2025-09-23 13:31:04,082 - httpx - INFO - HTTP Request: GET http://testserver/groups/nonexistent-group-id "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:31:04,096 - retriever_api - ERROR - Group creation error: 'department' is an invalid keyword argument for Group
+2025-09-23 13:31:04,097 - httpx - INFO - HTTP Request: POST http://testserver/groups "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:34:59,296 - retriever_api - INFO - CORS configuration loaded | environment=development allowed_origins=['*']
+2025-09-23 13:36:07,865 - retriever_api - INFO - CORS configuration loaded | environment=development allowed_origins=['*']
+2025-09-23 13:36:51,993 - retriever_api - INFO - CORS configuration loaded | environment=development allowed_origins=['*']
+2025-09-23 13:39:05,801 - retriever_api - INFO - CORS configuration loaded | environment=development allowed_origins=['*']
+2025-09-23 13:39:20,541 - retriever_api - INFO - CORS configuration loaded | environment=development allowed_origins=['*']
+2025-09-23 13:39:20,641 - httpx - INFO - HTTP Request: GET http://test/health "HTTP/1.1 200 OK"
+2025-09-23 13:39:20,649 - retriever_api - INFO - Google OAuth callback | endpoint=/auth/google/callback client_ip=127.0.0.1 has_token=True
+2025-09-23 13:39:20,665 - retriever_api - ERROR - Google OAuth callback failed | error='User' object is not subscriptable
+2025-09-23 13:39:20,665 - httpx - INFO - HTTP Request: POST http://test/auth/google/callback "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:39:20,705 - httpx - INFO - HTTP Request: GET http://test/auth/me "HTTP/1.1 404 Not Found"
+2025-09-23 13:39:20,723 - httpx - INFO - HTTP Request: PUT http://test/users/me "HTTP/1.1 404 Not Found"
+2025-09-23 13:39:20,734 - httpx - INFO - HTTP Request: GET http://test/auth/me "HTTP/1.1 403 Forbidden"
+2025-09-23 13:39:20,741 - httpx - INFO - HTTP Request: POST http://test/auth/google/callback "HTTP/1.1 422 Unprocessable Entity"
+2025-09-23 13:39:20,750 - retriever_api - ERROR - Group creation error: 'department' is an invalid keyword argument for Group
+2025-09-23 13:39:20,751 - httpx - INFO - HTTP Request: POST http://test/groups "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:39:20,766 - httpx - INFO - HTTP Request: GET http://test/groups/test-group-001 "HTTP/1.1 404 Not Found"
+2025-09-23 13:39:20,779 - httpx - INFO - HTTP Request: GET http://test/groups "HTTP/1.1 200 OK"
+2025-09-23 13:39:20,793 - retriever_api - ERROR - Group join error: argument of type 'bool' is not iterable
+2025-09-23 13:39:20,793 - httpx - INFO - HTTP Request: POST http://test/groups/test-group-001/join "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:39:20,809 - httpx - INFO - HTTP Request: GET http://test/users/test-user-001/groups "HTTP/1.1 200 OK"
+2025-09-23 13:39:22,480 - retriever_api - ERROR - Unhandled exception
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 97, in receive
+    return self.receive_nowait()
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 92, in receive_nowait
+    raise WouldBlock
+anyio.WouldBlock
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 148, in call_next
+    message = await recv_stream.receive()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 112, in receive
+    raise EndOfStream
+anyio.EndOfStream
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/core/logging_config.py", line 113, in middleware
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 156, in call_next
+    raise app_exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 141, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 714, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 734, in app
+    await route.handle(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/main.py", line 1405, in create_message
+    return Message(**created_message_dict)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: app.main.Message() argument after ** must be a mapping, not Message
+2025-09-23 13:39:22,874 - httpx - INFO - HTTP Request: GET http://test/messages?groupId=group-001 "HTTP/1.1 200 OK"
+2025-09-23 13:39:22,963 - retriever_api - ERROR - Unhandled exception
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 97, in receive
+    return self.receive_nowait()
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 92, in receive_nowait
+    raise WouldBlock
+anyio.WouldBlock
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 148, in call_next
+    message = await recv_stream.receive()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 112, in receive
+    raise EndOfStream
+anyio.EndOfStream
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/core/logging_config.py", line 113, in middleware
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 156, in call_next
+    raise app_exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 141, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 714, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 734, in app
+    await route.handle(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/main.py", line 1405, in create_message
+    return Message(**created_message_dict)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: app.main.Message() argument after ** must be a mapping, not Message
+2025-09-23 13:39:23,203 - retriever_api - ERROR - Unhandled exception
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 97, in receive
+    return self.receive_nowait()
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 92, in receive_nowait
+    raise WouldBlock
+anyio.WouldBlock
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 148, in call_next
+    message = await recv_stream.receive()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 112, in receive
+    raise EndOfStream
+anyio.EndOfStream
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/core/logging_config.py", line 113, in middleware
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 156, in call_next
+    raise app_exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 141, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 714, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 734, in app
+    await route.handle(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/main.py", line 1355, in search_groups
+    query_embedding = await ai_service.generate_embedding_async(validated_query)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'generate_embedding_async'
+2025-09-23 13:39:23,439 - httpx - INFO - HTTP Request: GET http://test/search?q= "HTTP/1.1 400 Bad Request"
+2025-09-23 13:39:23,444 - retriever_api - ERROR - Recommendations error: 404: User profile not found for recommendations
+2025-09-23 13:39:23,445 - httpx - INFO - HTTP Request: GET http://test/recommendations?limit=3 "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:39:23,456 - httpx - INFO - HTTP Request: GET http://test/auth/me "HTTP/1.1 403 Forbidden"
+2025-09-23 13:39:23,461 - httpx - INFO - HTTP Request: GET http://test/groups/nonexistent-group-id "HTTP/1.1 404 Not Found"
+2025-09-23 13:39:23,466 - retriever_api - ERROR - Group creation error: 'department' is an invalid keyword argument for Group
+2025-09-23 13:39:23,467 - httpx - INFO - HTTP Request: POST http://test/groups "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:41:05,441 - retriever_api - INFO - CORS configuration loaded | environment=development allowed_origins=['*']
+2025-09-23 13:41:05,507 - httpx - INFO - HTTP Request: GET http://test/health "HTTP/1.1 200 OK"
+2025-09-23 13:41:05,514 - retriever_api - INFO - Google OAuth callback | endpoint=/auth/google/callback client_ip=127.0.0.1 has_token=True
+2025-09-23 13:41:05,531 - retriever_api - ERROR - Google OAuth callback failed | error=greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2025-09-23 13:41:05,531 - httpx - INFO - HTTP Request: POST http://test/auth/google/callback "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:41:05,583 - httpx - INFO - HTTP Request: GET http://test/auth/me "HTTP/1.1 404 Not Found"
+2025-09-23 13:41:05,600 - httpx - INFO - HTTP Request: PUT http://test/users/me "HTTP/1.1 404 Not Found"
+2025-09-23 13:41:05,613 - httpx - INFO - HTTP Request: GET http://test/auth/me "HTTP/1.1 403 Forbidden"
+2025-09-23 13:41:05,617 - httpx - INFO - HTTP Request: POST http://test/auth/google/callback "HTTP/1.1 422 Unprocessable Entity"
+2025-09-23 13:41:05,629 - retriever_api - ERROR - Group creation error: 'NoneType' object has no attribute 'generate_embedding_async'
+2025-09-23 13:41:05,630 - httpx - INFO - HTTP Request: POST http://test/groups "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:41:05,645 - httpx - INFO - HTTP Request: GET http://test/groups/test-group-001 "HTTP/1.1 404 Not Found"
+2025-09-23 13:41:05,657 - httpx - INFO - HTTP Request: GET http://test/groups "HTTP/1.1 200 OK"
+2025-09-23 13:41:05,672 - retriever_api - ERROR - Group join error: 404: Study group not found or no longer available
+2025-09-23 13:41:05,673 - httpx - INFO - HTTP Request: POST http://test/groups/test-group-001/join "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:41:05,686 - httpx - INFO - HTTP Request: GET http://test/users/test-user-001/groups "HTTP/1.1 200 OK"
+2025-09-23 13:41:07,264 - retriever_api - ERROR - Unhandled exception
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 97, in receive
+    return self.receive_nowait()
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 92, in receive_nowait
+    raise WouldBlock
+anyio.WouldBlock
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 148, in call_next
+    message = await recv_stream.receive()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 112, in receive
+    raise EndOfStream
+anyio.EndOfStream
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/core/logging_config.py", line 113, in middleware
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 156, in call_next
+    raise app_exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 141, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 714, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 734, in app
+    await route.handle(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 327, in app
+    content = await serialize_response(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 176, in serialize_response
+    raise ResponseValidationError(
+fastapi.exceptions.ResponseValidationError: 5 validation errors:
+  {'type': 'missing', 'loc': ('response', 'groupId'), 'msg': 'Field required', 'input': <app.data.async_db.Message object at 0x104c1a450>}
+  {'type': 'missing', 'loc': ('response', 'senderId'), 'msg': 'Field required', 'input': <app.data.async_db.Message object at 0x104c1a450>}
+  {'type': 'missing', 'loc': ('response', 'messageId'), 'msg': 'Field required', 'input': <app.data.async_db.Message object at 0x104c1a450>}
+  {'type': 'missing', 'loc': ('response', 'createdAt'), 'msg': 'Field required', 'input': <app.data.async_db.Message object at 0x104c1a450>}
+  {'type': 'missing', 'loc': ('response', 'toxicityScore'), 'msg': 'Field required', 'input': <app.data.async_db.Message object at 0x104c1a450>}
+
+2025-09-23 13:41:07,631 - httpx - INFO - HTTP Request: GET http://test/messages?groupId=group-001 "HTTP/1.1 200 OK"
+2025-09-23 13:41:07,707 - retriever_api - ERROR - Unhandled exception
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 97, in receive
+    return self.receive_nowait()
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 92, in receive_nowait
+    raise WouldBlock
+anyio.WouldBlock
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 148, in call_next
+    message = await recv_stream.receive()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 112, in receive
+    raise EndOfStream
+anyio.EndOfStream
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/core/logging_config.py", line 113, in middleware
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 156, in call_next
+    raise app_exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 141, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 714, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 734, in app
+    await route.handle(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 327, in app
+    content = await serialize_response(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 176, in serialize_response
+    raise ResponseValidationError(
+fastapi.exceptions.ResponseValidationError: 5 validation errors:
+  {'type': 'missing', 'loc': ('response', 'groupId'), 'msg': 'Field required', 'input': <app.data.async_db.Message object at 0x16e246810>}
+  {'type': 'missing', 'loc': ('response', 'senderId'), 'msg': 'Field required', 'input': <app.data.async_db.Message object at 0x16e246810>}
+  {'type': 'missing', 'loc': ('response', 'messageId'), 'msg': 'Field required', 'input': <app.data.async_db.Message object at 0x16e246810>}
+  {'type': 'missing', 'loc': ('response', 'createdAt'), 'msg': 'Field required', 'input': <app.data.async_db.Message object at 0x16e246810>}
+  {'type': 'missing', 'loc': ('response', 'toxicityScore'), 'msg': 'Field required', 'input': <app.data.async_db.Message object at 0x16e246810>}
+
+2025-09-23 13:41:07,927 - retriever_api - ERROR - Unhandled exception
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 97, in receive
+    return self.receive_nowait()
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 92, in receive_nowait
+    raise WouldBlock
+anyio.WouldBlock
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 148, in call_next
+    message = await recv_stream.receive()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 112, in receive
+    raise EndOfStream
+anyio.EndOfStream
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/core/logging_config.py", line 113, in middleware
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 156, in call_next
+    raise app_exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 141, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 714, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 734, in app
+    await route.handle(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/main.py", line 1355, in search_groups
+    query_embedding = await ai_service.generate_embedding_async(validated_query)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'generate_embedding_async'
+2025-09-23 13:41:08,152 - httpx - INFO - HTTP Request: GET http://test/search?q= "HTTP/1.1 400 Bad Request"
+2025-09-23 13:41:08,157 - retriever_api - ERROR - Recommendations error: 404: User profile not found for recommendations
+2025-09-23 13:41:08,158 - httpx - INFO - HTTP Request: GET http://test/recommendations?limit=3 "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:41:08,168 - httpx - INFO - HTTP Request: GET http://test/auth/me "HTTP/1.1 403 Forbidden"
+2025-09-23 13:41:08,172 - httpx - INFO - HTTP Request: GET http://test/groups/nonexistent-group-id "HTTP/1.1 404 Not Found"
+2025-09-23 13:41:08,178 - retriever_api - ERROR - Group creation error: 'NoneType' object has no attribute 'generate_embedding_async'
+2025-09-23 13:41:08,179 - httpx - INFO - HTTP Request: POST http://test/groups "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:41:53,180 - retriever_api - INFO - CORS configuration loaded | environment=development allowed_origins=['*']
+2025-09-23 13:41:53,255 - httpx - INFO - HTTP Request: GET http://test/health "HTTP/1.1 200 OK"
+2025-09-23 13:41:53,262 - retriever_api - INFO - Google OAuth callback | endpoint=/auth/google/callback client_ip=127.0.0.1 has_token=True
+2025-09-23 13:41:53,280 - retriever_api - ERROR - Google OAuth callback failed | error=greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2025-09-23 13:41:53,281 - httpx - INFO - HTTP Request: POST http://test/auth/google/callback "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:41:53,320 - httpx - INFO - HTTP Request: GET http://test/auth/me "HTTP/1.1 404 Not Found"
+2025-09-23 13:41:53,336 - httpx - INFO - HTTP Request: PUT http://test/users/me "HTTP/1.1 404 Not Found"
+2025-09-23 13:41:53,347 - httpx - INFO - HTTP Request: GET http://test/auth/me "HTTP/1.1 403 Forbidden"
+2025-09-23 13:41:53,354 - httpx - INFO - HTTP Request: POST http://test/auth/google/callback "HTTP/1.1 422 Unprocessable Entity"
+2025-09-23 13:41:53,365 - retriever_api - ERROR - Group creation error: 'NoneType' object has no attribute 'generate_embedding_async'
+2025-09-23 13:41:53,366 - httpx - INFO - HTTP Request: POST http://test/groups "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:41:53,383 - httpx - INFO - HTTP Request: GET http://test/groups/test-group-001 "HTTP/1.1 404 Not Found"
+2025-09-23 13:41:53,404 - httpx - INFO - HTTP Request: GET http://test/groups "HTTP/1.1 200 OK"
+2025-09-23 13:41:53,421 - retriever_api - ERROR - Group join error: 404: Study group not found or no longer available
+2025-09-23 13:41:53,422 - httpx - INFO - HTTP Request: POST http://test/groups/test-group-001/join "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:41:53,439 - httpx - INFO - HTTP Request: GET http://test/users/test-user-001/groups "HTTP/1.1 200 OK"
+2025-09-23 13:41:55,043 - retriever_api - ERROR - Unhandled exception
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 97, in receive
+    return self.receive_nowait()
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 92, in receive_nowait
+    raise WouldBlock
+anyio.WouldBlock
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 148, in call_next
+    message = await recv_stream.receive()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 112, in receive
+    raise EndOfStream
+anyio.EndOfStream
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/core/logging_config.py", line 113, in middleware
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 156, in call_next
+    raise app_exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 141, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 714, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 734, in app
+    await route.handle(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 327, in app
+    content = await serialize_response(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 176, in serialize_response
+    raise ResponseValidationError(
+fastapi.exceptions.ResponseValidationError: 5 validation errors:
+  {'type': 'missing', 'loc': ('response', 'groupId'), 'msg': 'Field required', 'input': <app.data.async_db.Message object at 0x1146fa420>}
+  {'type': 'missing', 'loc': ('response', 'senderId'), 'msg': 'Field required', 'input': <app.data.async_db.Message object at 0x1146fa420>}
+  {'type': 'missing', 'loc': ('response', 'messageId'), 'msg': 'Field required', 'input': <app.data.async_db.Message object at 0x1146fa420>}
+  {'type': 'missing', 'loc': ('response', 'createdAt'), 'msg': 'Field required', 'input': <app.data.async_db.Message object at 0x1146fa420>}
+  {'type': 'missing', 'loc': ('response', 'toxicityScore'), 'msg': 'Field required', 'input': <app.data.async_db.Message object at 0x1146fa420>}
+
+2025-09-23 13:41:55,418 - httpx - INFO - HTTP Request: GET http://test/messages?groupId=group-001 "HTTP/1.1 200 OK"
+2025-09-23 13:41:55,500 - retriever_api - ERROR - Unhandled exception
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 97, in receive
+    return self.receive_nowait()
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 92, in receive_nowait
+    raise WouldBlock
+anyio.WouldBlock
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 148, in call_next
+    message = await recv_stream.receive()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 112, in receive
+    raise EndOfStream
+anyio.EndOfStream
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/core/logging_config.py", line 113, in middleware
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 156, in call_next
+    raise app_exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 141, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 714, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 734, in app
+    await route.handle(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 327, in app
+    content = await serialize_response(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 176, in serialize_response
+    raise ResponseValidationError(
+fastapi.exceptions.ResponseValidationError: 5 validation errors:
+  {'type': 'missing', 'loc': ('response', 'groupId'), 'msg': 'Field required', 'input': <app.data.async_db.Message object at 0x174bb5a60>}
+  {'type': 'missing', 'loc': ('response', 'senderId'), 'msg': 'Field required', 'input': <app.data.async_db.Message object at 0x174bb5a60>}
+  {'type': 'missing', 'loc': ('response', 'messageId'), 'msg': 'Field required', 'input': <app.data.async_db.Message object at 0x174bb5a60>}
+  {'type': 'missing', 'loc': ('response', 'createdAt'), 'msg': 'Field required', 'input': <app.data.async_db.Message object at 0x174bb5a60>}
+  {'type': 'missing', 'loc': ('response', 'toxicityScore'), 'msg': 'Field required', 'input': <app.data.async_db.Message object at 0x174bb5a60>}
+
+2025-09-23 13:41:55,726 - retriever_api - ERROR - Unhandled exception
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 97, in receive
+    return self.receive_nowait()
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 92, in receive_nowait
+    raise WouldBlock
+anyio.WouldBlock
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 148, in call_next
+    message = await recv_stream.receive()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 112, in receive
+    raise EndOfStream
+anyio.EndOfStream
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/core/logging_config.py", line 113, in middleware
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 156, in call_next
+    raise app_exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 141, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 714, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 734, in app
+    await route.handle(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/main.py", line 1355, in search_groups
+    query_embedding = await ai_service.generate_embedding_async(validated_query)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'generate_embedding_async'
+2025-09-23 13:41:56,015 - httpx - INFO - HTTP Request: GET http://test/search?q= "HTTP/1.1 400 Bad Request"
+2025-09-23 13:41:56,023 - retriever_api - ERROR - Recommendations error: 404: User profile not found for recommendations
+2025-09-23 13:41:56,024 - httpx - INFO - HTTP Request: GET http://test/recommendations?limit=3 "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:41:56,036 - httpx - INFO - HTTP Request: GET http://test/auth/me "HTTP/1.1 403 Forbidden"
+2025-09-23 13:41:56,040 - httpx - INFO - HTTP Request: GET http://test/groups/nonexistent-group-id "HTTP/1.1 404 Not Found"
+2025-09-23 13:41:56,047 - retriever_api - ERROR - Group creation error: 'NoneType' object has no attribute 'generate_embedding_async'
+2025-09-23 13:41:56,047 - httpx - INFO - HTTP Request: POST http://test/groups "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:43:03,519 - retriever_api - INFO - CORS configuration loaded | environment=development allowed_origins=['*']
+2025-09-23 13:43:03,584 - httpx - INFO - HTTP Request: GET http://test/health "HTTP/1.1 200 OK"
+2025-09-23 13:43:03,589 - retriever_api - INFO - Google OAuth callback | endpoint=/auth/google/callback client_ip=127.0.0.1 has_token=True
+2025-09-23 13:43:03,606 - retriever_api - ERROR - Google OAuth callback failed | error=greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2025-09-23 13:43:03,607 - httpx - INFO - HTTP Request: POST http://test/auth/google/callback "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:43:03,647 - httpx - INFO - HTTP Request: GET http://test/auth/me "HTTP/1.1 404 Not Found"
+2025-09-23 13:43:03,661 - httpx - INFO - HTTP Request: PUT http://test/users/me "HTTP/1.1 404 Not Found"
+2025-09-23 13:43:03,672 - httpx - INFO - HTTP Request: GET http://test/auth/me "HTTP/1.1 403 Forbidden"
+2025-09-23 13:43:03,676 - httpx - INFO - HTTP Request: POST http://test/auth/google/callback "HTTP/1.1 422 Unprocessable Entity"
+2025-09-23 13:43:03,687 - retriever_api - ERROR - Group creation error: 'NoneType' object has no attribute 'generate_embedding_async'
+2025-09-23 13:43:03,688 - httpx - INFO - HTTP Request: POST http://test/groups "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:43:03,701 - httpx - INFO - HTTP Request: GET http://test/groups/test-group-001 "HTTP/1.1 404 Not Found"
+2025-09-23 13:43:03,714 - httpx - INFO - HTTP Request: GET http://test/groups "HTTP/1.1 200 OK"
+2025-09-23 13:43:03,728 - retriever_api - ERROR - Group join error: 404: Study group not found or no longer available
+2025-09-23 13:43:03,729 - httpx - INFO - HTTP Request: POST http://test/groups/test-group-001/join "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:43:03,742 - httpx - INFO - HTTP Request: GET http://test/users/test-user-001/groups "HTTP/1.1 200 OK"
+2025-09-23 13:43:04,743 - retriever_api - ERROR - Unhandled exception
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 97, in receive
+    return self.receive_nowait()
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 92, in receive_nowait
+    raise WouldBlock
+anyio.WouldBlock
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 148, in call_next
+    message = await recv_stream.receive()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 112, in receive
+    raise EndOfStream
+anyio.EndOfStream
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/core/logging_config.py", line 113, in middleware
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 156, in call_next
+    raise app_exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 141, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 714, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 734, in app
+    await route.handle(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 327, in app
+    content = await serialize_response(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 176, in serialize_response
+    raise ResponseValidationError(
+fastapi.exceptions.ResponseValidationError: 2 validation errors:
+  {'type': 'int_parsing', 'loc': ('response', 'group_id'), 'msg': 'Input should be a valid integer, unable to parse string as an integer', 'input': 'group-001'}
+  {'type': 'int_parsing', 'loc': ('response', 'sender_id'), 'msg': 'Input should be a valid integer, unable to parse string as an integer', 'input': 'test-user-001'}
+
+2025-09-23 13:43:05,118 - httpx - INFO - HTTP Request: GET http://test/messages?groupId=group-001 "HTTP/1.1 200 OK"
+2025-09-23 13:43:05,198 - retriever_api - ERROR - Unhandled exception
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 97, in receive
+    return self.receive_nowait()
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 92, in receive_nowait
+    raise WouldBlock
+anyio.WouldBlock
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 148, in call_next
+    message = await recv_stream.receive()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 112, in receive
+    raise EndOfStream
+anyio.EndOfStream
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/core/logging_config.py", line 113, in middleware
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 156, in call_next
+    raise app_exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 141, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 714, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 734, in app
+    await route.handle(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 327, in app
+    content = await serialize_response(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 176, in serialize_response
+    raise ResponseValidationError(
+fastapi.exceptions.ResponseValidationError: 2 validation errors:
+  {'type': 'int_parsing', 'loc': ('response', 'group_id'), 'msg': 'Input should be a valid integer, unable to parse string as an integer', 'input': 'group-001'}
+  {'type': 'int_parsing', 'loc': ('response', 'sender_id'), 'msg': 'Input should be a valid integer, unable to parse string as an integer', 'input': 'test-user-001'}
+
+2025-09-23 13:43:05,421 - retriever_api - ERROR - Unhandled exception
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 97, in receive
+    return self.receive_nowait()
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 92, in receive_nowait
+    raise WouldBlock
+anyio.WouldBlock
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 148, in call_next
+    message = await recv_stream.receive()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 112, in receive
+    raise EndOfStream
+anyio.EndOfStream
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/core/logging_config.py", line 113, in middleware
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 156, in call_next
+    raise app_exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 141, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 714, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 734, in app
+    await route.handle(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/main.py", line 1355, in search_groups
+    query_embedding = await ai_service.generate_embedding_async(validated_query)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'generate_embedding_async'
+2025-09-23 13:43:05,648 - httpx - INFO - HTTP Request: GET http://test/search?q= "HTTP/1.1 400 Bad Request"
+2025-09-23 13:43:05,653 - retriever_api - ERROR - Recommendations error: 404: User profile not found for recommendations
+2025-09-23 13:43:05,653 - httpx - INFO - HTTP Request: GET http://test/recommendations?limit=3 "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:43:05,664 - httpx - INFO - HTTP Request: GET http://test/auth/me "HTTP/1.1 403 Forbidden"
+2025-09-23 13:43:05,668 - httpx - INFO - HTTP Request: GET http://test/groups/nonexistent-group-id "HTTP/1.1 404 Not Found"
+2025-09-23 13:43:05,675 - retriever_api - ERROR - Group creation error: 'NoneType' object has no attribute 'generate_embedding_async'
+2025-09-23 13:43:05,676 - httpx - INFO - HTTP Request: POST http://test/groups "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:44:01,542 - retriever_api - INFO - CORS configuration loaded | environment=development allowed_origins=['*']
+2025-09-23 13:44:23,890 - retriever_api - INFO - CORS configuration loaded | environment=development allowed_origins=['*']
+2025-09-23 13:45:04,711 - retriever_api - INFO - CORS configuration loaded | environment=development allowed_origins=['*']
+2025-09-23 13:45:39,638 - retriever_api - INFO - CORS configuration loaded | environment=development allowed_origins=['*']
+2025-09-23 13:45:39,738 - httpx - INFO - HTTP Request: GET http://test/health "HTTP/1.1 200 OK"
+2025-09-23 13:45:39,744 - retriever_api - INFO - Google OAuth callback | endpoint=/auth/google/callback client_ip=127.0.0.1 has_token=True
+2025-09-23 13:45:39,761 - retriever_api - ERROR - Google OAuth callback failed | error=greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2025-09-23 13:45:39,762 - httpx - INFO - HTTP Request: POST http://test/auth/google/callback "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:45:39,799 - httpx - INFO - HTTP Request: GET http://test/auth/me "HTTP/1.1 404 Not Found"
+2025-09-23 13:45:39,814 - httpx - INFO - HTTP Request: PUT http://test/users/me "HTTP/1.1 404 Not Found"
+2025-09-23 13:45:39,824 - httpx - INFO - HTTP Request: GET http://test/auth/me "HTTP/1.1 403 Forbidden"
+2025-09-23 13:45:39,828 - httpx - INFO - HTTP Request: POST http://test/auth/google/callback "HTTP/1.1 422 Unprocessable Entity"
+2025-09-23 13:45:39,839 - retriever_api - ERROR - Group creation error: 'NoneType' object has no attribute 'generate_embedding_async'
+2025-09-23 13:45:39,840 - httpx - INFO - HTTP Request: POST http://test/groups "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:45:39,852 - httpx - INFO - HTTP Request: GET http://test/groups/test-group-001 "HTTP/1.1 404 Not Found"
+2025-09-23 13:45:39,864 - httpx - INFO - HTTP Request: GET http://test/groups "HTTP/1.1 200 OK"
+2025-09-23 13:45:39,877 - retriever_api - ERROR - Group join error: 404: Study group not found or no longer available
+2025-09-23 13:45:39,878 - httpx - INFO - HTTP Request: POST http://test/groups/test-group-001/join "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:45:39,892 - httpx - INFO - HTTP Request: GET http://test/users/test-user-001/groups "HTTP/1.1 200 OK"
+2025-09-23 13:45:41,373 - retriever_api - ERROR - Unhandled exception
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 97, in receive
+    return self.receive_nowait()
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 92, in receive_nowait
+    raise WouldBlock
+anyio.WouldBlock
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 148, in call_next
+    message = await recv_stream.receive()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 112, in receive
+    raise EndOfStream
+anyio.EndOfStream
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/core/logging_config.py", line 113, in middleware
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 156, in call_next
+    raise app_exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 141, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 714, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 734, in app
+    await route.handle(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 327, in app
+    content = await serialize_response(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 176, in serialize_response
+    raise ResponseValidationError(
+fastapi.exceptions.ResponseValidationError: 2 validation errors:
+  {'type': 'int_parsing', 'loc': ('response', 'group_id'), 'msg': 'Input should be a valid integer, unable to parse string as an integer', 'input': 'group-001'}
+  {'type': 'int_parsing', 'loc': ('response', 'sender_id'), 'msg': 'Input should be a valid integer, unable to parse string as an integer', 'input': 'test-user-001'}
+
+2025-09-23 13:45:41,739 - httpx - INFO - HTTP Request: GET http://test/messages?groupId=group-001 "HTTP/1.1 200 OK"
+2025-09-23 13:45:41,821 - retriever_api - ERROR - Unhandled exception
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 97, in receive
+    return self.receive_nowait()
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 92, in receive_nowait
+    raise WouldBlock
+anyio.WouldBlock
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 148, in call_next
+    message = await recv_stream.receive()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 112, in receive
+    raise EndOfStream
+anyio.EndOfStream
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/core/logging_config.py", line 113, in middleware
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 156, in call_next
+    raise app_exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 141, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 714, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 734, in app
+    await route.handle(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 327, in app
+    content = await serialize_response(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 176, in serialize_response
+    raise ResponseValidationError(
+fastapi.exceptions.ResponseValidationError: 2 validation errors:
+  {'type': 'int_parsing', 'loc': ('response', 'group_id'), 'msg': 'Input should be a valid integer, unable to parse string as an integer', 'input': 'group-001'}
+  {'type': 'int_parsing', 'loc': ('response', 'sender_id'), 'msg': 'Input should be a valid integer, unable to parse string as an integer', 'input': 'test-user-001'}
+
+2025-09-23 13:45:42,041 - retriever_api - ERROR - Unhandled exception
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 97, in receive
+    return self.receive_nowait()
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 92, in receive_nowait
+    raise WouldBlock
+anyio.WouldBlock
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 148, in call_next
+    message = await recv_stream.receive()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 112, in receive
+    raise EndOfStream
+anyio.EndOfStream
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/core/logging_config.py", line 113, in middleware
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 156, in call_next
+    raise app_exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 141, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 714, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 734, in app
+    await route.handle(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/main.py", line 1355, in search_groups
+    query_embedding = await ai_service.generate_embedding_async(validated_query)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'generate_embedding_async'
+2025-09-23 13:45:42,268 - httpx - INFO - HTTP Request: GET http://test/search?q= "HTTP/1.1 400 Bad Request"
+2025-09-23 13:45:42,272 - retriever_api - ERROR - Recommendations error: 404: User profile not found for recommendations
+2025-09-23 13:45:42,273 - httpx - INFO - HTTP Request: GET http://test/recommendations?limit=3 "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:45:42,284 - httpx - INFO - HTTP Request: GET http://test/auth/me "HTTP/1.1 403 Forbidden"
+2025-09-23 13:45:42,289 - httpx - INFO - HTTP Request: GET http://test/groups/nonexistent-group-id "HTTP/1.1 404 Not Found"
+2025-09-23 13:45:42,295 - retriever_api - ERROR - Group creation error: 'NoneType' object has no attribute 'generate_embedding_async'
+2025-09-23 13:45:42,296 - httpx - INFO - HTTP Request: POST http://test/groups "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:49:27,904 - retriever_api - INFO - CORS configuration loaded | environment=development allowed_origins=['*']
+2025-09-23 13:51:49,724 - retriever_api - INFO - CORS configuration loaded | environment=development allowed_origins=['*']
+2025-09-23 13:51:49,798 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-09-23 13:51:49,804 - retriever_api - INFO - Google OAuth callback | endpoint=/auth/google/callback client_ip=testclient has_token=True
+2025-09-23 13:51:49,804 - retriever_api - ERROR - Google OAuth callback failed | error='coroutine' object has no attribute 'get'
+2025-09-23 13:51:49,805 - httpx - INFO - HTTP Request: POST http://testserver/auth/google/callback "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:51:49,852 - httpx - INFO - HTTP Request: GET http://testserver/auth/me "HTTP/1.1 404 Not Found"
+2025-09-23 13:51:49,868 - httpx - INFO - HTTP Request: PUT http://testserver/users/me "HTTP/1.1 404 Not Found"
+2025-09-23 13:51:49,879 - httpx - INFO - HTTP Request: GET http://testserver/auth/me "HTTP/1.1 403 Forbidden"
+2025-09-23 13:51:49,885 - httpx - INFO - HTTP Request: POST http://testserver/auth/google/callback "HTTP/1.1 422 Unprocessable Entity"
+2025-09-23 13:51:49,897 - retriever_api - ERROR - Group creation error: 'NoneType' object has no attribute 'generate_embedding'
+2025-09-23 13:51:49,898 - httpx - INFO - HTTP Request: POST http://testserver/groups "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:51:49,915 - httpx - INFO - HTTP Request: GET http://testserver/groups/test-group-001 "HTTP/1.1 404 Not Found"
+2025-09-23 13:51:49,929 - httpx - INFO - HTTP Request: GET http://testserver/groups "HTTP/1.1 200 OK"
+2025-09-23 13:51:49,943 - retriever_api - ERROR - Group join error: 404: Study group not found or no longer available
+2025-09-23 13:51:49,944 - httpx - INFO - HTTP Request: POST http://testserver/groups/test-group-001/join "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:51:49,958 - httpx - INFO - HTTP Request: GET http://testserver/users/test-user-001/groups "HTTP/1.1 200 OK"
+2025-09-23 13:51:51,506 - retriever_api - ERROR - Unhandled exception
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 97, in receive
+    return self.receive_nowait()
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 92, in receive_nowait
+    raise WouldBlock
+anyio.WouldBlock
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 148, in call_next
+    message = await recv_stream.receive()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 112, in receive
+    raise EndOfStream
+anyio.EndOfStream
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/core/logging_config.py", line 113, in middleware
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 156, in call_next
+    raise app_exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 141, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 714, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 734, in app
+    await route.handle(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 327, in app
+    content = await serialize_response(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 176, in serialize_response
+    raise ResponseValidationError(
+fastapi.exceptions.ResponseValidationError: 2 validation errors:
+  {'type': 'int_parsing', 'loc': ('response', 'group_id'), 'msg': 'Input should be a valid integer, unable to parse string as an integer', 'input': 'group-001'}
+  {'type': 'int_parsing', 'loc': ('response', 'sender_id'), 'msg': 'Input should be a valid integer, unable to parse string as an integer', 'input': 'test-user-001'}
+
+2025-09-23 13:51:51,881 - httpx - INFO - HTTP Request: GET http://testserver/messages?groupId=group-001 "HTTP/1.1 200 OK"
+2025-09-23 13:51:51,959 - retriever_api - ERROR - Unhandled exception
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 97, in receive
+    return self.receive_nowait()
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 92, in receive_nowait
+    raise WouldBlock
+anyio.WouldBlock
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 148, in call_next
+    message = await recv_stream.receive()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 112, in receive
+    raise EndOfStream
+anyio.EndOfStream
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/core/logging_config.py", line 113, in middleware
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 156, in call_next
+    raise app_exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 141, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 714, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 734, in app
+    await route.handle(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 327, in app
+    content = await serialize_response(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 176, in serialize_response
+    raise ResponseValidationError(
+fastapi.exceptions.ResponseValidationError: 2 validation errors:
+  {'type': 'int_parsing', 'loc': ('response', 'group_id'), 'msg': 'Input should be a valid integer, unable to parse string as an integer', 'input': 'group-001'}
+  {'type': 'int_parsing', 'loc': ('response', 'sender_id'), 'msg': 'Input should be a valid integer, unable to parse string as an integer', 'input': 'test-user-001'}
+
+2025-09-23 13:51:52,212 - retriever_api - ERROR - Unhandled exception
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 97, in receive
+    return self.receive_nowait()
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 92, in receive_nowait
+    raise WouldBlock
+anyio.WouldBlock
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 148, in call_next
+    message = await recv_stream.receive()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 112, in receive
+    raise EndOfStream
+anyio.EndOfStream
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/core/logging_config.py", line 113, in middleware
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 156, in call_next
+    raise app_exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 141, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 714, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 734, in app
+    await route.handle(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 214, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/concurrency.py", line 37, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/to_thread.py", line 56, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 2134, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 851, in run
+    result = context.run(func, *args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/main.py", line 1350, in search_groups
+    query_embedding = ai_service.generate_embedding(validated_query)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'generate_embedding'
+2025-09-23 13:51:52,514 - httpx - INFO - HTTP Request: GET http://testserver/search?q= "HTTP/1.1 400 Bad Request"
+2025-09-23 13:51:52,519 - retriever_api - ERROR - Recommendations error: 404: User profile not found for recommendations
+2025-09-23 13:51:52,520 - httpx - INFO - HTTP Request: GET http://testserver/recommendations?limit=3 "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:51:52,530 - httpx - INFO - HTTP Request: GET http://testserver/auth/me "HTTP/1.1 403 Forbidden"
+2025-09-23 13:51:52,535 - httpx - INFO - HTTP Request: GET http://testserver/groups/nonexistent-group-id "HTTP/1.1 404 Not Found"
+2025-09-23 13:51:52,541 - retriever_api - ERROR - Group creation error: 'NoneType' object has no attribute 'generate_embedding'
+2025-09-23 13:51:52,542 - httpx - INFO - HTTP Request: POST http://testserver/groups "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:58:26,241 - retriever_api - INFO - CORS configuration loaded | environment=development allowed_origins=['*']
+2025-09-23 13:58:26,294 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-09-23 13:58:26,299 - retriever_api - INFO - Google OAuth callback | endpoint=/auth/google/callback client_ip=testclient has_token=True
+2025-09-23 13:58:26,300 - retriever_api - ERROR - Google OAuth callback failed | error='coroutine' object has no attribute 'get'
+2025-09-23 13:58:26,301 - httpx - INFO - HTTP Request: POST http://testserver/auth/google/callback "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:58:26,346 - httpx - INFO - HTTP Request: GET http://testserver/auth/me "HTTP/1.1 404 Not Found"
+2025-09-23 13:58:26,362 - httpx - INFO - HTTP Request: PUT http://testserver/users/me "HTTP/1.1 404 Not Found"
+2025-09-23 13:58:26,373 - httpx - INFO - HTTP Request: GET http://testserver/auth/me "HTTP/1.1 403 Forbidden"
+2025-09-23 13:58:26,377 - httpx - INFO - HTTP Request: POST http://testserver/auth/google/callback "HTTP/1.1 422 Unprocessable Entity"
+2025-09-23 13:58:26,388 - retriever_api - ERROR - Group creation error: 'NoneType' object has no attribute 'generate_embedding'
+2025-09-23 13:58:26,389 - httpx - INFO - HTTP Request: POST http://testserver/groups "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:58:26,404 - httpx - INFO - HTTP Request: GET http://testserver/groups/test-group-001 "HTTP/1.1 404 Not Found"
+2025-09-23 13:58:26,416 - httpx - INFO - HTTP Request: GET http://testserver/groups "HTTP/1.1 200 OK"
+2025-09-23 13:58:26,430 - retriever_api - ERROR - Group join error: 404: Study group not found or no longer available
+2025-09-23 13:58:26,431 - httpx - INFO - HTTP Request: POST http://testserver/groups/test-group-001/join "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:58:26,444 - httpx - INFO - HTTP Request: GET http://testserver/users/test-user-001/groups "HTTP/1.1 200 OK"
+2025-09-23 13:58:27,984 - retriever_api - ERROR - Unhandled exception
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 97, in receive
+    return self.receive_nowait()
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 92, in receive_nowait
+    raise WouldBlock
+anyio.WouldBlock
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 148, in call_next
+    message = await recv_stream.receive()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 112, in receive
+    raise EndOfStream
+anyio.EndOfStream
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/core/logging_config.py", line 113, in middleware
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 156, in call_next
+    raise app_exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 141, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 714, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 734, in app
+    await route.handle(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 327, in app
+    content = await serialize_response(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 176, in serialize_response
+    raise ResponseValidationError(
+fastapi.exceptions.ResponseValidationError: 2 validation errors:
+  {'type': 'int_parsing', 'loc': ('response', 'group_id'), 'msg': 'Input should be a valid integer, unable to parse string as an integer', 'input': 'group-001'}
+  {'type': 'int_parsing', 'loc': ('response', 'sender_id'), 'msg': 'Input should be a valid integer, unable to parse string as an integer', 'input': 'test-user-001'}
+
+2025-09-23 13:58:28,354 - httpx - INFO - HTTP Request: GET http://testserver/messages?groupId=group-001 "HTTP/1.1 200 OK"
+2025-09-23 13:58:28,432 - retriever_api - ERROR - Unhandled exception
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 97, in receive
+    return self.receive_nowait()
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 92, in receive_nowait
+    raise WouldBlock
+anyio.WouldBlock
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 148, in call_next
+    message = await recv_stream.receive()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 112, in receive
+    raise EndOfStream
+anyio.EndOfStream
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/core/logging_config.py", line 113, in middleware
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 156, in call_next
+    raise app_exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 141, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 714, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 734, in app
+    await route.handle(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 327, in app
+    content = await serialize_response(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 176, in serialize_response
+    raise ResponseValidationError(
+fastapi.exceptions.ResponseValidationError: 2 validation errors:
+  {'type': 'int_parsing', 'loc': ('response', 'group_id'), 'msg': 'Input should be a valid integer, unable to parse string as an integer', 'input': 'group-001'}
+  {'type': 'int_parsing', 'loc': ('response', 'sender_id'), 'msg': 'Input should be a valid integer, unable to parse string as an integer', 'input': 'test-user-001'}
+
+2025-09-23 13:58:28,687 - retriever_api - ERROR - Unhandled exception
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 97, in receive
+    return self.receive_nowait()
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 92, in receive_nowait
+    raise WouldBlock
+anyio.WouldBlock
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 148, in call_next
+    message = await recv_stream.receive()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/streams/memory.py", line 112, in receive
+    raise EndOfStream
+anyio.EndOfStream
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/core/logging_config.py", line 113, in middleware
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 156, in call_next
+    raise app_exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/base.py", line 141, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 714, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 734, in app
+    await route.handle(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 214, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/starlette/concurrency.py", line 37, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/to_thread.py", line 56, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 2134, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 851, in run
+    result = context.run(func, *args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fabriciorodriguez/Desktop/Retriever Study/retriever-study/backend/app/main.py", line 1350, in search_groups
+    query_embedding = ai_service.generate_embedding(validated_query)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'generate_embedding'
+2025-09-23 13:58:28,989 - httpx - INFO - HTTP Request: GET http://testserver/search?q= "HTTP/1.1 400 Bad Request"
+2025-09-23 13:58:28,995 - retriever_api - ERROR - Recommendations error: 404: User profile not found for recommendations
+2025-09-23 13:58:28,996 - httpx - INFO - HTTP Request: GET http://testserver/recommendations?limit=3 "HTTP/1.1 500 Internal Server Error"
+2025-09-23 13:58:29,006 - httpx - INFO - HTTP Request: GET http://testserver/auth/me "HTTP/1.1 403 Forbidden"
+2025-09-23 13:58:29,011 - httpx - INFO - HTTP Request: GET http://testserver/groups/nonexistent-group-id "HTTP/1.1 404 Not Found"
+2025-09-23 13:58:29,017 - retriever_api - ERROR - Group creation error: 'NoneType' object has no attribute 'generate_embedding'
+2025-09-23 13:58:29,018 - httpx - INFO - HTTP Request: POST http://testserver/groups "HTTP/1.1 500 Internal Server Error"
