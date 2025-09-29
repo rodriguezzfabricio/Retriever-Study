@@ -126,22 +126,26 @@ class UserRepository:
         self.db.refresh(user)
         return user
 
-    def create_or_update_oauth_user(self, google_id: str, name: str, email: str, picture_url: str) -> User:
-        user = self.get_user_by_google_id(google_id)
+    def find_or_create_user_by_oauth(self, user_info: Dict[str, Any]) -> User:
+        """
+        Finds a user by email. If they exist, update their name and picture.
+        If not, create a new user record.
+        """
+        user = self.get_user_by_email(user_info["email"])
         if user:
-            user.name = name
-            user.email = email
-            user.picture_url = picture_url
+            user.name = user_info.get("name")
+            user.picture_url = user_info.get("picture")
             user.updated_at = datetime.utcnow()
+            user.last_login = datetime.utcnow()
         else:
             user = User(
-                google_id=google_id,
-                name=name,
-                email=email,
-                picture_url=picture_url,
-                hashed_password="", # Not used for OAuth
+                name=user_info.get("name"),
+                email=user_info["email"],
+                picture_url=user_info.get("picture"),
+                google_id=user_info.get("sub"),
+                hashed_password="",  # Not used for OAuth
             )
-        self.db.add(user)
+            self.db.add(user)
         self.db.commit()
         self.db.refresh(user)
         return user

@@ -1950,3 +1950,86 @@ AttributeError: 'NoneType' object has no attribute 'generate_embedding'
 2025-09-23 13:58:29,011 - httpx - INFO - HTTP Request: GET http://testserver/groups/nonexistent-group-id "HTTP/1.1 404 Not Found"
 2025-09-23 13:58:29,017 - retriever_api - ERROR - Group creation error: 'NoneType' object has no attribute 'generate_embedding'
 2025-09-23 13:58:29,018 - httpx - INFO - HTTP Request: POST http://testserver/groups "HTTP/1.1 500 Internal Server Error"
+2025-09-28 18:27:11,903 - retriever_api - INFO - CORS configuration loaded | environment=development allowed_origins=['*']
+2025-09-28 18:27:28,212 - retriever_api - INFO - CORS configuration loaded | environment=development allowed_origins=['*']
+2025-09-28 18:27:40,598 - retriever_api - INFO - CORS configuration loaded | environment=development allowed_origins=['*']
+2025-09-28 18:28:24,569 - retriever_api - INFO - CORS configuration loaded | environment=development allowed_origins=['*']
+2025-09-28 18:28:24,639 - httpx - INFO - HTTP Request: GET http://testserver/auth/google/config "HTTP/1.1 200 OK"
+2025-09-28 18:28:24,654 - httpx - INFO - HTTP Request: PUT http://testserver/users/me "HTTP/1.1 403 Forbidden"
+2025-09-28 18:28:24,684 - httpx - INFO - HTTP Request: PUT http://testserver/users/me "HTTP/1.1 401 Unauthorized"
+2025-09-28 18:28:24,698 - httpx - INFO - HTTP Request: POST http://testserver/auth/google/callback "HTTP/1.1 404 Not Found"
+2025-09-28 18:28:24,706 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-09-28 18:28:24,709 - httpx - INFO - HTTP Request: GET http://testserver/auth/google/config "HTTP/1.1 200 OK"
+2025-09-28 18:28:24,712 - httpx - INFO - HTTP Request: GET http://testserver/auth/me "HTTP/1.1 404 Not Found"
+2025-09-28 18:28:24,730 - httpx - INFO - HTTP Request: POST http://testserver/auth/google/callback "HTTP/1.1 404 Not Found"
+2025-09-28 18:28:24,742 - httpx - INFO - HTTP Request: POST http://testserver/auth/google/callback "HTTP/1.1 404 Not Found"
+2025-09-28 18:28:24,743 - httpx - INFO - HTTP Request: POST http://testserver/auth/google/callback "HTTP/1.1 404 Not Found"
+2025-09-28 18:28:24,743 - httpx - INFO - HTTP Request: POST http://testserver/auth/google/callback "HTTP/1.1 404 Not Found"
+2025-09-28 18:28:24,744 - httpx - INFO - HTTP Request: POST http://testserver/auth/google/callback "HTTP/1.1 404 Not Found"
+2025-09-28 18:28:24,744 - httpx - INFO - HTTP Request: POST http://testserver/auth/google/callback "HTTP/1.1 404 Not Found"
+2025-09-28 18:36:40,724 - retriever_api - INFO - CORS configuration loaded | environment=development allowed_origins=['*']
+2025-09-28 18:36:40,797 - httpx - INFO - HTTP Request: GET http://testserver/auth/google/config "HTTP/1.1 200 OK"
+2025-09-28 18:36:40,817 - httpx - INFO - HTTP Request: POST http://testserver/auth/google "HTTP/1.1 200 OK"
+2025-09-28 18:36:40,964 - retriever_api - ERROR - Authentication failed: Invalid or expired Google token
+2025-09-28 18:36:40,965 - httpx - INFO - HTTP Request: POST http://testserver/auth/google "HTTP/1.1 401 Unauthorized"
+2025-09-28 18:36:40,997 - retriever_api - ERROR - Authentication failed: Invalid or expired Google token
+2025-09-28 18:36:40,998 - httpx - INFO - HTTP Request: POST http://testserver/auth/google "HTTP/1.1 401 Unauthorized"
+2025-09-28 18:36:41,007 - retriever_api - ERROR - Profile update error: 'NoneType' object has no attribute 'generate_embedding'
+2025-09-28 18:36:41,008 - httpx - INFO - HTTP Request: PUT http://testserver/users/me "HTTP/1.1 500 Internal Server Error"
+2025-09-28 18:36:41,017 - httpx - INFO - HTTP Request: PUT http://testserver/users/me "HTTP/1.1 403 Forbidden"
+2025-09-28 18:36:41,022 - httpx - INFO - HTTP Request: PUT http://testserver/users/me "HTTP/1.1 401 Unauthorized"
+2025-09-28 18:36:41,026 - httpx - INFO - HTTP Request: PUT http://testserver/users/me "HTTP/1.1 401 Unauthorized"
+2025-09-28 18:36:41,030 - httpx - INFO - HTTP Request: GET http://testserver/users/1/groups "HTTP/1.1 404 Not Found"
+2025-09-28 18:36:41,040 - httpx - INFO - HTTP Request: GET http://testserver/users/other_user_id/groups "HTTP/1.1 404 Not Found"
+2025-09-28 18:36:41,050 - httpx - INFO - HTTP Request: GET http://testserver/recommendations "HTTP/1.1 403 Forbidden"
+2025-09-28 18:36:41,059 - httpx - INFO - HTTP Request: POST http://testserver/groups "HTTP/1.1 403 Forbidden"
+2025-09-28 18:36:41,069 - httpx - INFO - HTTP Request: POST http://testserver/groups/test_group_id/join "HTTP/1.1 403 Forbidden"
+2025-09-28 18:36:41,165 - retriever_api - ERROR - Authentication failed: Invalid or expired Google token
+2025-09-28 18:36:41,166 - httpx - INFO - HTTP Request: POST http://testserver/auth/google "HTTP/1.1 401 Unauthorized"
+2025-09-28 18:36:41,170 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-09-28 18:36:41,173 - httpx - INFO - HTTP Request: GET http://testserver/auth/google/config "HTTP/1.1 200 OK"
+2025-09-28 18:36:41,177 - httpx - INFO - HTTP Request: PUT http://testserver/users/me "HTTP/1.1 403 Forbidden"
+2025-09-28 18:36:41,279 - retriever_api - ERROR - Authentication failed: Invalid or expired Google token
+2025-09-28 18:36:41,281 - httpx - INFO - HTTP Request: POST http://testserver/auth/google "HTTP/1.1 401 Unauthorized"
+2025-09-28 18:36:41,287 - retriever_api - ERROR - Authentication failed: Invalid or expired Google token
+2025-09-28 18:36:41,289 - httpx - INFO - HTTP Request: POST http://testserver/auth/google "HTTP/1.1 401 Unauthorized"
+2025-09-28 18:36:41,299 - retriever_api - ERROR - Authentication failed: Invalid or expired Google token
+2025-09-28 18:36:41,299 - retriever_api - ERROR - Authentication failed: Invalid or expired Google token
+2025-09-28 18:36:41,299 - retriever_api - ERROR - Authentication failed: Invalid or expired Google token
+2025-09-28 18:36:41,303 - httpx - INFO - HTTP Request: POST http://testserver/auth/google "HTTP/1.1 401 Unauthorized"
+2025-09-28 18:36:41,303 - httpx - INFO - HTTP Request: POST http://testserver/auth/google "HTTP/1.1 401 Unauthorized"
+2025-09-28 18:36:41,303 - httpx - INFO - HTTP Request: POST http://testserver/auth/google "HTTP/1.1 401 Unauthorized"
+2025-09-28 18:56:46,561 - retriever_api - INFO - CORS configuration loaded | environment=development allowed_origins=['*']
+2025-09-28 18:56:46,632 - httpx - INFO - HTTP Request: GET http://testserver/auth/google/config "HTTP/1.1 200 OK"
+2025-09-28 18:56:46,652 - httpx - INFO - HTTP Request: POST http://testserver/auth/google "HTTP/1.1 200 OK"
+2025-09-28 18:56:46,661 - httpx - INFO - HTTP Request: POST http://testserver/auth/google "HTTP/1.1 200 OK"
+2025-09-28 18:56:46,692 - retriever_api - ERROR - Authentication failed: Invalid or expired Google token
+2025-09-28 18:56:46,693 - httpx - INFO - HTTP Request: POST http://testserver/auth/google "HTTP/1.1 401 Unauthorized"
+2025-09-28 18:56:46,774 - httpx - INFO - HTTP Request: PUT http://testserver/users/me "HTTP/1.1 403 Forbidden"
+2025-09-28 18:56:46,778 - httpx - INFO - HTTP Request: PUT http://testserver/users/me "HTTP/1.1 401 Unauthorized"
+2025-09-28 18:56:46,782 - httpx - INFO - HTTP Request: PUT http://testserver/users/me "HTTP/1.1 401 Unauthorized"
+2025-09-28 18:56:46,787 - httpx - INFO - HTTP Request: GET http://testserver/recommendations "HTTP/1.1 403 Forbidden"
+2025-09-28 18:56:46,789 - retriever_api - ERROR - Recommendations error: 'User' object has no attribute 'get'
+2025-09-28 18:56:46,790 - httpx - INFO - HTTP Request: GET http://testserver/recommendations "HTTP/1.1 500 Internal Server Error"
+2025-09-28 18:56:46,795 - httpx - INFO - HTTP Request: POST http://testserver/groups "HTTP/1.1 403 Forbidden"
+2025-09-28 18:56:46,805 - httpx - INFO - HTTP Request: POST http://testserver/groups/test_group_id/join "HTTP/1.1 403 Forbidden"
+2025-09-28 18:56:46,814 - httpx - INFO - HTTP Request: PUT http://testserver/users/me "HTTP/1.1 403 Forbidden"
+2025-09-28 18:56:46,816 - httpx - INFO - HTTP Request: PUT http://testserver/users/me "HTTP/1.1 403 Forbidden"
+2025-09-28 18:56:46,818 - httpx - INFO - HTTP Request: PUT http://testserver/users/me "HTTP/1.1 403 Forbidden"
+2025-09-28 18:56:46,820 - httpx - INFO - HTTP Request: PUT http://testserver/users/me "HTTP/1.1 401 Unauthorized"
+2025-09-28 18:56:46,821 - httpx - INFO - HTTP Request: PUT http://testserver/users/me "HTTP/1.1 401 Unauthorized"
+2025-09-28 18:56:46,938 - retriever_api - ERROR - Authentication failed: Invalid or expired Google token
+2025-09-28 18:56:46,939 - httpx - INFO - HTTP Request: POST http://testserver/auth/google "HTTP/1.1 401 Unauthorized"
+2025-09-28 18:56:46,944 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-09-28 18:56:46,947 - httpx - INFO - HTTP Request: GET http://testserver/auth/google/config "HTTP/1.1 200 OK"
+2025-09-28 18:56:46,951 - httpx - INFO - HTTP Request: PUT http://testserver/users/me "HTTP/1.1 403 Forbidden"
+2025-09-28 18:56:47,063 - retriever_api - ERROR - Authentication failed: Invalid or expired Google token
+2025-09-28 18:56:47,065 - httpx - INFO - HTTP Request: POST http://testserver/auth/google "HTTP/1.1 401 Unauthorized"
+2025-09-28 18:56:47,067 - retriever_api - ERROR - Authentication failed: Invalid or expired Google token
+2025-09-28 18:56:47,067 - retriever_api - ERROR - Authentication failed: Invalid or expired Google token
+2025-09-28 18:56:47,067 - retriever_api - ERROR - Authentication failed: Invalid or expired Google token
+2025-09-28 18:56:47,071 - httpx - INFO - HTTP Request: POST http://testserver/auth/google "HTTP/1.1 401 Unauthorized"
+2025-09-28 18:56:47,071 - httpx - INFO - HTTP Request: POST http://testserver/auth/google "HTTP/1.1 401 Unauthorized"
+2025-09-28 18:56:47,071 - httpx - INFO - HTTP Request: POST http://testserver/auth/google "HTTP/1.1 401 Unauthorized"
+2025-09-28 18:56:47,073 - retriever_api - ERROR - Authentication failed: Invalid or expired Google token
+2025-09-28 18:56:47,075 - httpx - INFO - HTTP Request: POST http://testserver/auth/google "HTTP/1.1 401 Unauthorized"

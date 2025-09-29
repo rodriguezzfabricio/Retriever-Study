@@ -8,6 +8,7 @@ load_dotenv(env_file)
 
 from fastapi import FastAPI, HTTPException, Depends, Request, WebSocket, WebSocketDisconnect
 import json
+import asyncio
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, validator
 from typing import List, Dict, Any, Optional
@@ -25,7 +26,7 @@ from app.core.auth import (
     AuthError,
     verify_token,
     create_access_token,
-    create_refresh_token,
+    
     validate_umbc_email,
     ACCESS_TOKEN_EXPIRE_MINUTES,
     GOOGLE_CLIENT_ID,
@@ -349,89 +350,16 @@ class Message(BaseModel):
 
 # --- OAuth Authentication Models ---
 
-class GoogleLoginRequest(BaseModel):
-    """Payload sent from the SPA after Google sign-in."""
+class GoogleTokenPayload(BaseModel):
+    """Model for the incoming Google ID token."""
+    google_token: str = Field(..., description="The ID token issued by Google.")
 
-    id_token: str = Field(
-        ...,
-        description="Google-issued ID token returned to the SPA",
-        min_length=10,
-        max_length=4096,
-    )
+class AuthResponse(BaseModel):
+    """Response model for successful authentication."""
+    access_token: str
+    user: dict
 
-class TokenResponse(BaseModel):
-    """
-    Standardized response format for authentication tokens.
-    
-    Why standardization matters:
-    - Frontend developers know exactly what to expect
-    - Consistent across all auth endpoints
-    - Follows OAuth 2.0 specification standards
-    - Easy to add new fields later without breaking changes
-    """
-    access_token: str = Field(..., description="JWT access token for API requests")
-    refresh_token: str = Field(..., description="Long-lived token for getting new access tokens")
-    token_type: str = Field(default="bearer", description="Token type (always 'bearer' for JWT)")
-    expires_in: int = Field(..., description="Access token lifetime in seconds")
-    user: Dict[str, Any] = Field(..., description="User profile information")
 
-class GoogleCallbackRequest(BaseModel):
-    """Payload for backend Google OAuth callback exchange."""
-    id_token: str = Field(
-        ...,
-        description="Google-issued ID token returned to the SPA",
-        min_length=10,
-        max_length=4096,
-    )
-
-class RefreshTokenRequest(BaseModel):
-    """
-    Request model for token refresh endpoint.
-    
-    Security considerations:
-    - Only accepts refresh tokens (not access tokens)
-    - Validates token format before processing
-    - Limits token length to prevent abuse
-    """
-    refresh_token: str = Field(
-        ...,
-        description="Valid refresh token to exchange for new access token",
-        min_length=10,  # JWT tokens are always long
-        max_length=2048  # Reasonable upper limit
-    )
-
-class AuthErrorResponse(BaseModel):
-    """
-    Standardized error response for authentication failures.
-    
-    Why custom error format:
-    - Consistent error structure across all endpoints
-    - Helpful error messages for frontend developers
-    - Security: Don't expose internal error details
-    - Internationalization ready (error codes)
-    """
-    error: str = Field(..., description="Error type identifier")
-    message: str = Field(..., description="Human-readable error message")
-    details: Optional[Dict[str, Any]] = Field(None, description="Additional error context")
-
-class UserProfile(BaseModel):
-    """
-    User profile data structure for authenticated responses.
-    
-    Design decisions:
-    - Only includes safe-to-expose user data
-    - No sensitive fields like tokens or internal IDs
-    - Consistent with frontend user context structure
-    """
-    id: str = Field(..., description="User unique identifier")
-    name: str = Field(..., description="User display name")
-    email: str = Field(..., description="User email address")
-    picture: Optional[str] = Field(None, description="Profile picture URL")
-    courses: List[str] = Field(default_factory=list, description="User's enrolled courses")
-    bio: Optional[str] = Field(None, description="User biography")
-    created_at: Optional[str] = Field(None, description="Account creation timestamp")
-
-# --- FastAPI App Initialization ---
 
 app = FastAPI(
     title=config.app_name,
@@ -527,255 +455,54 @@ def get_google_oauth_config():
 
 
 @limiter.limit("10/minute")
-@app.post("/auth/google/callback", response_model=TokenResponse)
-def google_oauth_callback(request: Request, payload: GoogleCallbackRequest, repos: dict = Depends(get_repositories)):
-    """
-    Accept a Google ID token, verify it, upsert the user, and return backend-signed JWTs.
-
-    This endpoint is intended for SPAs that complete Google Sign-In on the client and
-    then exchange the returned ID token with our backend for first-party JWTs.
-    """
-    try:
-        logger.info(
-            "Google OAuth callback",
-            endpoint="/auth/google/callback",
-            client_ip=getattr(request.client, "host", "unknown"),
-            has_token=bool(payload.id_token),
-        )
-
-        google_user = verify_google_id_token(payload.id_token)
-        email = google_user.get("email")
-
-        if not validate_umbc_email(email):
-            raise HTTPException(status_code=403, detail="A valid UMBC email address is required.")
-
-        google_id = google_user.get("sub")
-        if not google_id:
-            raise HTTPException(status_code=400, detail="Google token missing required subject claim.")
-
-        display_name = google_user.get("name") or (email.split("@", 1)[0] if email else "Unknown User")
-        sanitized_name = sanitize_string(display_name, max_length=100)
-        picture_url = google_user.get("picture")
-
-        user_record = repos["user_repo"].create_or_update_oauth_user(
-            google_id=google_id,
-            name=sanitized_name,
-            email=email,
-            picture_url=picture_url,
-        )
-
-        repos["user_repo"].update_last_login(user_record.id)
-
-        # Minimal JWT payload per security guidance: only internal userId and email
-        token_payload = {
-            "sub": user_record.id,
-            "email": email,
-        }
-
-        access_token = create_access_token(token_payload)
-        refresh_token = create_refresh_token(token_payload)
-
-        user_profile = {
-            "id": user_record.id,
-            "name": user_record.name,
-            "email": user_record.email,
-            "picture": user_record.picture_url,
-            "courses": user_record.courses,
-            "bio": user_record.bio,
-            "created_at": user_record.created_at.isoformat(),
-        }
-
-        logger.info("Google OAuth callback successful", user_id=user_record.id)
-
-        return TokenResponse(
-            access_token=access_token,
-            refresh_token=refresh_token,
-            expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-            user=user_profile,
-        )
-
-    except AuthError as e:
-        raise HTTPException(status_code=e.status_code, detail=e.message)
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error("Google OAuth callback failed", error=str(e))
-        raise HTTPException(status_code=500, detail="Failed to authenticate with Google.")
-
-
-@limiter.limit("10/minute")
-@app.post("/auth/refresh", response_model=TokenResponse)
-def refresh_access_token(request: Request, refresh_request: RefreshTokenRequest, repos: dict = Depends(get_repositories)):
-    """
-    Exchange refresh token for new access token.
-    
-    Why refresh tokens matter:
-    - Access tokens expire quickly (30 minutes) for security
-    - Refresh tokens last longer (7 days) for user convenience  
-    - This endpoint lets users stay logged in without re-authenticating
-    
-    Security Features:
-    - Validates refresh token signature and expiration
-    - Only accepts tokens with type="refresh"
-    - Generates new access token with updated expiration
-    - Could implement token rotation (new refresh token each time)
-    """
-    try:
-        # Step 1: Verify and decode refresh token
-        payload = verify_token(refresh_request.refresh_token)
-        
-        # Step 2: Validate token type (prevent access tokens being used)
-        if payload.get("type") != "refresh":
-            raise AuthError("Invalid token type for refresh operation", 400)
-        
-        # Step 3: Get user information from token (internal userId now in 'sub')
-        user_id = payload.get("sub")
-        if not user_id:
-            raise AuthError("Invalid token: missing user identifier", 400)
-        
-        # Step 4: Verify user still exists and is active
-        user_record = repos["user_repo"].get_user(user_id)
-            
-        if not user_record:
-            raise AuthError("User account not found or deactivated", 404)
-        
-        # Step 5: Create new access token with fresh expiration
-        new_access_token = create_access_token({
-            "sub": user_id,
-            "email": payload.get("email"),
-        })
-        
-        # Step 6: Format user profile
-        user_profile = {
-            "id": user_record["userId"],
-            "name": user_record["name"],
-            "email": user_record["email"],
-            "picture": user_record.get("picture_url"),
-            "courses": user_record.get("courses", []),
-            "bio": user_record.get("bio", "")
-        }
-        
-        # Return new access token (keep same refresh token for now)
-        return TokenResponse(
-            access_token=new_access_token,
-            refresh_token=refresh_request.refresh_token,  # Reuse existing refresh token
-            expires_in=1800,  # 30 minutes in seconds
-            user=user_profile
-        )
-        
-    except AuthError as e:
-        raise HTTPException(status_code=e.status_code, detail=e.message)
-    except Exception as e:
-        logger.error(f"Token refresh error: {e}")
-        raise HTTPException(
-            status_code=401,
-            detail="Token refresh failed. Please log in again."
-        )
-
-@limiter.limit("100/minute")
-@app.get("/auth/me", response_model=UserProfile)
-def get_current_user_profile(request: Request, current_user = Depends(get_current_user), repos: dict = Depends(get_repositories)):
-    """
-    Get current user's profile information.
-    
-    This endpoint demonstrates how authentication protection works:
-    - Depends(get_current_user) automatically validates JWT token
-    - If token is valid, current_user contains user info
-    - If token is invalid/missing, returns 401 automatically
-    - No manual token validation needed in endpoint code
-    
-    Usage by frontend:
-    - Include "Authorization: Bearer <token>" header
-    - FastAPI handles token extraction and validation
-    - Endpoint receives validated user data
-    """
-    try:
-        user_record = repos["user_repo"].get_user(current_user["user_id"])
-        
-        if not user_record:
-            raise HTTPException(
-                status_code=404,
-                detail="User profile not found"
-            )
-        
-        logger.info("Authenticated request to /auth/me",
-                    user_id=user_record.get("userId"),
-                    email=user_record.get("email"))
-        
-        return UserProfile(
-            id=user_record["userId"],
-            name=user_record["name"],
-            email=user_record["email"],
-            picture=user_record.get("picture_url"),
-            courses=user_record.get("courses", []),
-            bio=user_record.get("bio", ""),
-            created_at=user_record.get("created_at")
-        )
-        
-    except HTTPException:
-        raise  # Re-raise HTTP exceptions as-is
-    except Exception as e:
-        logger.error(f"Get profile error: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to retrieve user profile"
-        )
-
-@limiter.limit("100/minute")
-@app.get("/users/{user_id}/groups", response_model=List[Group])
-def get_user_groups(
+@app.post("/auth/google", response_model=AuthResponse, status_code=200)
+async def google_auth(
+    payload: GoogleTokenPayload,
     request: Request,
-    user_id: str,
-    current_user = Depends(get_current_user),
     repos: dict = Depends(get_repositories)
 ):
-    """Return groups the authenticated user belongs to."""
-    try:
-        requester_id = current_user.get("user_id")
-
-        if not requester_id:
-            raise HTTPException(status_code=401, detail="Authentication required")
-
-        if user_id not in {requester_id, current_user.get("userId"), current_user.get("id")}:  # type: ignore[arg-type]
-            raise HTTPException(status_code=403, detail="Cannot view other users' groups")
-
-        groups_data = repos["group_repo"].get_groups_for_member(requester_id)
-
-        normalized_groups = [normalize_group_record(group) for group in groups_data]
-        return [Group(**group) for group in normalized_groups if group]
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error("Failed to retrieve user groups", user_id=user_id, error=str(e))
-        raise HTTPException(status_code=500, detail="Failed to retrieve joined groups")
-
-@app.post("/auth/logout")
-def logout_user(current_user = Depends(get_current_user)):
     """
-    Logout current user.
-    
-    JWT Token Logout Strategy:
-    - JWTs are stateless - we can't "invalidate" them server-side
-    - Frontend should delete tokens from storage
-    - Optional: Maintain token blacklist in Redis for high-security apps
-    - Update last_logout timestamp for analytics
-    
-    In production, you might:
-    - Add token to blacklist database/Redis
-    - Revoke Google refresh tokens
-    - Clear any server-side sessions
+    Handles the complete backend authentication flow.
+
+    It receives a Google ID token, verifies it, finds or creates a user,
+    and returns a secure, backend-issued JWT.
     """
     try:
-        # Update logout timestamp for analytics
-        # db.update_last_logout(current_user["user_id"])  # Optional
-        
-        return {"message": "Successfully logged out"}
-        
+        # Verify the Google token to get user information
+        google_user_info = await verify_google_id_token(payload.google_token)
+
+        if not validate_umbc_email(google_user_info.get("email")):
+            raise HTTPException(status_code=403, detail="A valid UMBC email address is required.")
+
+        # Find or create the user in the database
+        user_record = await asyncio.get_event_loop().run_in_executor(
+            None,  # Use the default thread pool
+            repos["user_repo"].find_or_create_user_by_oauth,
+            google_user_info
+        )
+
+        # Create the backend-issued JWT
+        access_token = create_access_token(data={"sub": str(user_record.id), "email": user_record.email})
+
+        # Return the access token and user profile
+        return AuthResponse(
+            access_token=access_token,
+            user={
+                "id": str(user_record.id),
+                "email": user_record.email,
+                "full_name": user_record.name,
+                "profile_image_url": user_record.picture_url,
+            },
+        )
+    except AuthError as e:
+        logger.error(f"Authentication failed: {e.message}")
+        raise HTTPException(status_code=e.status_code, detail=e.message)
     except Exception as e:
-        logger.error(f"Logout error: {e}")
-        # Don't fail logout even if database update fails
-        return {"message": "Logged out (with warnings)"}
+        logger.error(f"An unexpected error occurred during authentication: {e}")
+        raise HTTPException(status_code=500, detail="An internal server error occurred.")
+
+
+
 
 # ========== APPLICATION ENDPOINTS ==========
 # Original endpoints with authentication protection added
@@ -877,6 +604,23 @@ def get_error_summary(request: Request, window_hours: int = 1):
             status_code=500,
             detail="Failed to retrieve error tracking data"
         )
+
+class UserProfile(BaseModel):
+    """
+    User profile data structure for authenticated responses.
+    
+    Design decisions:
+    - Only includes safe-to-expose user data
+    - No sensitive fields like tokens or internal IDs
+    - Consistent with frontend user context structure
+    """
+    id: str = Field(..., description="User unique identifier")
+    name: str = Field(..., description="User display name")
+    email: str = Field(..., description="User email address")
+    picture: Optional[str] = Field(None, description="Profile picture URL")
+    courses: List[str] = Field(default_factory=list, description="User's enrolled courses")
+    bio: Optional[str] = Field(None, description="User biography")
+    created_at: Optional[str] = Field(None, description="Account creation timestamp")
 
 @limiter.limit("60/minute")
 @app.put("/users/me", response_model=UserProfile)
@@ -1937,23 +1681,7 @@ class TokenResponse(BaseModel):
     expires_in: int = Field(..., description="Access token lifetime in seconds")
     user: Dict[str, Any] = Field(..., description="User profile information")
 
-class RefreshTokenRequest(BaseModel):
-    """
-    Request model for token refresh endpoint.
-    
-    Security considerations:
-    - Only accepts refresh tokens (not access tokens)
-    - Validates token format before processing
-    - Limits token length to prevent abuse
-    """
-    refresh_token: str = Field(
-        ...,
-        description="Valid refresh token to exchange for new access token",
-        min_length=10,  # JWT tokens are always long
-        max_length=2048  # Reasonable upper limit
-    )
 
-class AuthErrorResponse(BaseModel):
     """
     Standardized error response for authentication failures.
     

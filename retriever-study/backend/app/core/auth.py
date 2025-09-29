@@ -33,7 +33,7 @@ SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 if not SECRET_KEY:
     raise ValueError("JWT_SECRET_KEY environment variable must be set")
 ALGORITHM = "HS256"  # Industry standard for JWT signing
-ACCESS_TOKEN_EXPIRE_MINUTES = 30  # Short-lived for security
+ACCESS_TOKEN_EXPIRE_MINUTES = 10080  # 7 days  # Short-lived for security
 REFRESH_TOKEN_EXPIRE_DAYS = 7     # Longer for user convenience
 
 # Google OAuth credentials - get these from Google Cloud Console
@@ -68,52 +68,29 @@ class AuthError(Exception):
 # ========== JWT TOKEN FUNCTIONS ==========
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """
-    Create a signed JWT access token
+    Create a signed JWT access token with a 7-day expiration.
     
-    How JWT works:
-    1. Take user data (payload)
-    2. Add expiration timestamp  
-    3. Sign with secret key using HMAC-SHA256
-    4. Result: three base64 parts separated by dots (header.payload.signature)
-    
-    Why we include 'type': Prevents refresh tokens being used as access tokens
+    The payload includes the internal user ID (`sub`) and email,
+    adhering to the new secure authentication standard.
     """
-    payload = data.copy()  # Don't modify original data
+    payload = data.copy()
     
-    # Set expiration time
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    
-    # Add JWT standard claims
-    payload.update({
-        "exp": expire,      # Expiration time (standard JWT claim)
-        "type": "access",   # Custom claim to differentiate token types
-        "iat": datetime.utcnow()  # Issued at time
-    })
-    
-    # Sign and return token
-    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
-
-def create_refresh_token(data: dict) -> str:
-    """
-    Create a long-lived refresh token
-    
-    Refresh tokens:
-    - Only used to get new access tokens
-    - Longer expiration for user convenience
-    - Should be stored securely (httpOnly cookie in production)
-    """
-    payload = data.copy()
-    expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+        # Set default expiration to 7 days as per requirements
+        expire = datetime.utcnow() + timedelta(days=7)
     
     payload.update({
         "exp": expire,
-        "type": "refresh",  # Prevents misuse as access token
-        "iat": datetime.utcnow()
+        "iat": datetime.utcnow(),
+        "type": "access",
     })
     
+    # Ensure 'sub' (subject) claim is present for user identification
+    if "sub" not in payload:
+        raise ValueError("Payload for access token must contain 'sub' (user ID) claim.")
+        
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
 def verify_token(token: str) -> Dict[str, Any]:
